@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--默认状态-->
+    <item android:state_pressed="false">
+        <shape>
+            <corners android:radius="10dp" />
+            <solid android:color="@color/button1BackgroundBegin" />
+        </shape>
+    </item>
+    <!--点击后状态-->
+    <item>
+        <shape>
+            <corners android:radius="10dp" />
+            <solid android:color="@color/button1BackgroundEnd" />
+        </shape>
+    </item>
+
+
+</selector>

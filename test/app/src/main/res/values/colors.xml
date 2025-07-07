@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="background">#121212</color>
+    <color name="mainText">#FFFFFF</color>
+    <color name="subText">#E0E0E0</color>
+    <color name="mainButton">#B0B0B0</color>
+    <color name="subButton">#6C63FF</color>
+    <color name="buttonText">#4A4A4A</color>
+    <!-- ===== 全局颜色 ===== -->
+    <color name="colorBackground">#121212</color>
+    <color name="colorTextPrimary">#FFFFFF</color>
+    <color name="colorTextSecondary">#B0B0B0</color>
+    <color name="colorButtonPrimary">#6C63FF</color>
+    <color name="colorButtonSecondary">#4A4A4A</color>
+
+
+</resources>
