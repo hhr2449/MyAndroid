@@ -2,7 +2,11 @@ package com.java.huhaoran;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,7 +48,7 @@ public class TabNewsFragment extends Fragment {
     @Override
     //生命周期开始，注意onCreate()方法是系统自动调用的，
     // newInstance()方法只是预先创建对象并且传入参数，
-    // 等到需要页面的时候其返回的TabNewsFragment对象会自动调用这个方法创建液面1
+    // 等到需要页面的时候其返回的TabNewsFragment对象会自动调用这个方法创建页面
     public void onCreate(Bundle savedInstanceState) {
         //调用父类的onCreate()方法，初始化页面
         super.onCreate(savedInstanceState);
@@ -59,5 +63,24 @@ public class TabNewsFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_tab_news, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        RecyclerView recyclerView = view.findViewById(R.id.news_tab_recycler);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // 开线程请求数据
+        new Thread(() -> {
+            //根据newInstance时传入的title，请求数据
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1900-01-01", "", new String[]{}, title, "1");
+            if (response != null && response.data != null) {
+                requireActivity().runOnUiThread(() -> {
+                    NewsAdapter adapter = new NewsAdapter(response.data);
+                    recyclerView.setAdapter(adapter);
+                });
+            }
+        }).start();
     }
 }

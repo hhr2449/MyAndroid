@@ -3,6 +3,7 @@ package com.java.huhaoran;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.google.android.material.navigation.NavigationView;
 
@@ -109,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
         //启用绑定
         tabLayoutMediator.attach();
 //----------------------实现主题栏-----------------------------------------------
+
+
 
 
 

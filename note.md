@@ -942,34 +942,65 @@ Fragment是一种可以嵌入在Activity当中的UI片段
 1. **创建 Adapter,绑定到ViewPager**
 
    ```java
-   //viewpager需要设置Adapter,这里使用FragmentStateAdapter
-       //ViewPager是容器，负责显示页面和处理手部滑动
-       //FragmentStateAdapter是Fragment的适配器，负责向ViewPager提供Fragment，并且管理Fragment的生命周期
-       //Fragment是每个页面具体显示的内容
-       viewpager.setAdapter(new FragmentStateAdapter(this) {
-           //这里创建了一个匿名的FragmentStateAdapter对象
-           @NonNull
-           @Override
-           //这个方法的返回值是一个Fragment对象，当ViewPager需要显示一个页面的时候就会调用
-           //这个方法，根据位置返回一个Fragment对象
-           public Fragment createFragment(int position) {
-               return null;
-           }
+   //----------------------实现主题栏-----------------------------------------------
+           //初始化tablayout和viewpager，用于实现滑动新闻分类
+           tablayout = findViewById(R.id.tablayout);
+           viewpager = findViewById(R.id.viewpager);
    
-           @Override
-           //告诉ViewPager一共有多少个页面
-           public int getItemCount() {
-               return 0;
-           }
-       });
+           //viewpager需要设置Adapter,这里使用FragmentStateAdapter
+           //ViewPager是容器，负责显示页面和处理手部滑动
+           //FragmentStateAdapter是Fragment的适配器，负责向ViewPager提供Fragment，并且管理Fragment的生命周期
+           //Fragment是每个页面具体显示的内容
+           viewpager.setAdapter(new FragmentStateAdapter(this) {
+               //这里创建了一个匿名的FragmentStateAdapter对象
+               @NonNull
+               @Override
+               //这个方法的返回值是一个Fragment对象，当ViewPager需要显示一个页面的时候就会调用
+               //这个方法，根据位置返回一个Fragment对象
+               public Fragment createFragment(int position) {
+                   //使用newInstance()方法创建一个Fragment对象，传入的主题参数使用titles[position]获取
+                   return TabNewsFragment.newInstance(titles[position]);
+               }
    
-       //设置点击滑动抽屉的返回键
-       backbutton.setOnClickListener(v -> {
-           DrawerLayout drawer = findViewById(R.id.drawer_layout);
-           //关闭抽屉
-           drawer.closeDrawer(GravityCompat.START);
-       });
-   }
+               @Override
+               //告诉ViewPager一共有多少个页面
+               public int getItemCount() {
+                   //总的页面数就是标题的个数
+                   return titles.length;
+               }
+           });
+   
+           //tablayout点击事件
+           tablayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+               @Override
+               public void onTabSelected(TabLayout.Tab tab) {
+                   //设置viewPager选中当前页
+                   //tab.getPosition()获取当前选中的tab的索引
+                   viewpager.setCurrentItem(tab.getPosition(),true);
+               }
+   
+               @Override
+               public void onTabUnselected(TabLayout.Tab tab) {
+   
+               }
+   
+               @Override
+               public void onTabReselected(TabLayout.Tab tab) {
+   
+               }
+           });
+   
+           //viewPager和tab_layout关联在一起
+           TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
+               @Override
+               public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                   tab.setText(titles[position]);
+               }
+           });
+   
+           //启用绑定
+           tabLayoutMediator.attach();
+   //----------------------实现主题栏-----------------------------------------------
    ```
 
 2. 创建一个继承了Fragment类的类用于创建新的Fragment页面，具体创建方法后面讲述
@@ -1054,3 +1085,266 @@ public class TabNewsFragment extends Fragment {
 3. 自定义页面的样式
 4. 在FragmentStateAdapter的createFragment方法中调用newInstance创建并且返回对应的页面
 5. 在getItemCount()中返回页面的总个数
+
+## 如何引入库
+
+在libs文件中写库的名称和版本：
+
+```xml
+[versions]
+agp = "8.10.1"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+appcompat = "1.7.1"
+material = "1.12.0"
+constraintlayout = "2.2.1"
+lifecycleLivedataKtx = "2.9.1"
+lifecycleViewmodelKtx = "2.9.1"
+navigationFragment = "2.9.1"
+navigationUi = "2.9.1"
+//库的版本
+gson = "2.8.9"
+glide = "4.16.0"
+okhttp = "4.11.0"
+
+[libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
+navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
+navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
+//新加入的库
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+```
+
+然后再build.gradle中引入：
+
+```
+implementation(libs.gson)
+implementation(libs.glide)
+implementation(libs.okhttp)
+```
+
+最后点击sync
+
+![image-20250708094239982](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/image-20250708094239982.png)
+
+## 新闻详情
+
+### 如何获取新闻数据
+
+##### 调用现成的API
+
+```java
+package com.java.huhaoran;
+import android.util.Log;
+
+import com.google.gson.Gson;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import java.io.IOException;
+import java.util.List;
+
+
+// 目标是解析新闻数据，并且返回一个NewsResponse对象，
+// 注意NewsResponse是一个内部类，创建的时候应该使用FetchNews.NewsResponse来创建
+public class FetchNews {
+    // 接口地址模板
+    private static final String BASE_URL = "https://api2.newsminer.net/svc/news/queryNewsList";
+    public static NewsResponse fetchNews(String size, String startDate, String endDate, String[] words, String categories, String page) {
+        String url = BASE_URL + "?size=" + size;
+
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            url += "&startDate=" + startDate;
+        }
+
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            url += "&endDate=" + endDate;
+        }
+        else {
+            url += "&endDate=当前时间";
+        }
+
+        url += "&words=";
+        if (words != null && words.length > 0) {
+            for(int i = 0; i < words.length; i++) {
+                url += words[i];
+                if (i < words.length - 1) {
+                    url += ",";
+                }
+            }
+        }
+
+        if (categories != null && !categories.trim().isEmpty()) {
+            url += "&categories=" + categories;
+        }
+
+        url += "&page=" + page;
+
+        // 创建 OkHttpClient
+        // OkHttpClient是用于发送请求的客户端对象
+        OkHttpClient client = new OkHttpClient();
+
+        // 构建请求
+        // request是请求对象，用于描述发送的Http请求
+        //使用了OkHttp提供的构建器模式，url是请求的地址，.build()方法构建出请求的对象
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        try {
+            // 同步发送请求
+            //response是响应对象，用于描述请求得到的响应
+            //client.newCall(request) 创建一个Call类型对象，代表一次http网络请求
+            //参数是请求对象，表示该网络请求的内容
+            //execute() 方法发送请求并获取响应
+            Response response = client.newCall(request).execute();
+
+            //如果请求成功，那么response的body里面就包含了我们要的新闻数据，格式为jason
+            if (response.isSuccessful()) {
+                // 获取返回的 JSON 字符串
+                String json = response.body().string();
+
+                // 打印原始 JSON 字符串
+                System.out.println("原始JSON：\n" + json.substring(0, Math.min(500, json.length())) + "...\n");
+
+                // 使用 Gson 解析
+                Gson gson = new Gson();
+                //接受一个json字符串，返回指定类型的对象
+                //这里转换采用了字符串匹配，将json字符串的字段按照字段名与类的成员变量进行匹配
+                //如果字段名和成员变量的名字一样，那么字段值就会自动赋给成员变量
+                NewsResponse newsResponse = gson.fromJson(json, NewsResponse.class);
+                return newsResponse;
+
+
+            } else {
+                System.out.println("请求失败，状态码：" + response.code());
+                return null;
+            }
+
+        } catch (IOException e) {
+            Log.e( "FetchNews","网络请求异常：" + e.getMessage());
+        }
+
+        return null;
+    }
+
+
+    // JSON 数据结构类
+    //定义了用来接受json解析结果的类
+    static class NewsResponse {
+        //每一条新闻字段名为data，这里设置了名为data的列表，那么一条新闻数据就会成为列表中的一个元素
+        List<NewsItem> data;
+    }
+
+    static class Organizations {
+        String mention;
+        String count;
+    }
+
+
+    static class KeyWord {
+        String word;
+        String score;
+    }
+
+    static class Location {
+        String mention;
+    }
+
+
+    static class NewsItem {
+        String title;
+        String publishTime;
+        List<KeyWord> keywords;
+        List<Organizations> organizations;
+        List<Location> locations;
+        String content;
+        String source;
+        String category;
+        String image;
+        String video;
+    }
+}
+```
+
+这里需要使用刚刚引入的OkHttp和gson库，其中okhttp用于发送http请求来获取json格式的数据
+
+gson库用于解析json
+
+一些注意事项：
+
+1. size,page参数不能缺，一定要有，word参数可以留空，但是要有word=这个参数名称在，其他的参数可以留空
+
+2. 图片，视频返回的是链接
+
+3. 图片链接格式：
+
+   空：可能直接没有，可能返回[]
+
+   有内容：![image-20250708120414452](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/image-20250708120414452.png)
+
+   用[]框起来，如果有多个链接，则用英文逗号和空格隔开
+
+4. words参数之间可以使用逗号连接
+
+##### **打开网络权限**
+
+在manifest中做出如下改变：
+
+![image-20250708100626089](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/image-20250708100626089.png)
+
+增加红色框中的两行
+
+然后在xml文件夹下面增加配置文件：
+
+![image-20250708100727890](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/image-20250708100727890.png)
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
+```
+
+##### 重要！！！
+
+
+
+不能够再在主线程中进行网络请求，因为网络请求可能很慢，容易卡住ui，应该开启一个子线程来进行网络请求
+
+例如：
+
+```java
+        //直接通过
+	new Thread(() -> {
+            // 发起网络请求（运行在子线程）
+            FetchNews.NewsResponse response = FetchNews.fetchNews(
+                    "10", "2019-01-01", "2023-01-01", new String[]{"拜登"}, "科技", "2"
+            );
+
+            if (response != null && response.data != null && !response.data.isEmpty()) {
+                String title = response.data.get(0).title;
+
+                // ⚠️ 子线程不能直接更新 UI，需要回到主线程
+                runOnUiThread(() -> {
+                    TextView textView = findViewById(R.id.email);
+                    textView.setText(title);
+                });
+            }
+        }).start();
+```
+
+
+
+
+### 实现新闻列表

@@ -14,15 +14,35 @@ import java.util.List;
 public class FetchNews {
     // 接口地址模板
     private static final String BASE_URL = "https://api2.newsminer.net/svc/news/queryNewsList";
-    public static NewsResponse fetchNews(String size, String startDate, String endDate, String[] words, String category, String page) {
-        String url = BASE_URL + "?size=" + size + "&startDate=" + startDate + "&endDate=" + endDate + "&words=";
-        for(int i = 0; i < words.length; i++) {
-            url += words[i];
-            if(i != words.length - 1) {
-                url += ",";
+    public static NewsResponse fetchNews(String size, String startDate, String endDate, String[] words, String categories, String page) {
+        String url = BASE_URL + "?size=" + size;
+
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            url += "&startDate=" + startDate;
+        }
+
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            url += "&endDate=" + endDate;
+        }
+        else {
+            url += "&endDate=当前时间";
+        }
+
+        url += "&words=";
+        if (words != null && words.length > 0) {
+            for(int i = 0; i < words.length; i++) {
+                url += words[i];
+                if (i < words.length - 1) {
+                    url += ",";
+                }
             }
         }
-        url += "&category=" + category + "&page=" + page;
+
+        if (categories != null && !categories.trim().isEmpty()) {
+            url += "&categories=" + categories;
+        }
+
+        url += "&page=" + page;
 
         // 创建 OkHttpClient
         // OkHttpClient是用于发送请求的客户端对象
@@ -43,7 +63,7 @@ public class FetchNews {
             //execute() 方法发送请求并获取响应
             Response response = client.newCall(request).execute();
 
-            //如果请求成功，那么response的body里面就包含了我们要的新闻数据，格式为jason
+            //如果请求成功，那么response的body里面就包含了我们要的新闻数据，格式为json
             if (response.isSuccessful()) {
                 // 获取返回的 JSON 字符串
                 String json = response.body().string();
@@ -103,7 +123,7 @@ public class FetchNews {
         List<Organizations> organizations;
         List<Location> locations;
         String content;
-        String source;
+        String publisher;
         String category;
         String image;
         String video;

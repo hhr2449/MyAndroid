@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.glide)
     implementation(libs.okhttp)
+    implementation(libs.recyclerview)
 
 
 }
