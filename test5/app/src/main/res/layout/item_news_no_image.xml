@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="120dp"
+    android:padding="12dp">
+
+    <!-- 新闻标题 -->
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="新闻标题:新华社北京7月2日电 国务委员兼外交部长王毅2日在北京同墨西哥外长埃布拉德共见记者时应询表示，这些天，围绕朝鲜半岛问题，各方开展新一轮良性互动"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:layout_marginBottom="12dp" />
+
+
+    <!-- 底部固定区域（发布者、时间、互动按钮） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_alignParentBottom="true">  <!-- 关键修改：固定在底部 -->
+
+        <TextView
+            android:id="@+id/publisher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="120dp"
+            android:text="新华社aknfkjenfkefenkfkeenf"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#928D8D"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2020-07-02"
+            android:textColor="#928D8D"
+            android:textSize="12sp"
+            android:layout_marginLeft="12dp" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- 点赞 -->
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/like" />
+            <TextView
+                android:id="@+id/like"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="121300"
+                android:textColor="#928D8D"
+                android:textSize="12sp" />
+
+            <!-- 收藏 -->
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/collection"
+                android:layout_marginLeft="10dp" />
+            <TextView
+                android:id="@+id/collection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1000000"
+                android:textColor="#928D8D"
+                android:textSize="12sp" />
+
+            <!-- 更多 -->
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/more"
+                android:layout_marginLeft="10dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

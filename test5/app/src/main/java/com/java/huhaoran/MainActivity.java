@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tablayout;
     private ViewPager2 viewpager;
     //这是新闻主题的数组，用来创建TabLayout的标签
-    private String[] titles = {"全部","娱乐", "军事", "教育", "文化", "健康", "财经", "体育", "汽车", "科技", "社会"};
+    private String[] titles = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
 
 
     @Override
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
             public void onTabSelected(TabLayout.Tab tab) {
                 //设置viewPager选中当前页
                 //tab.getPosition()获取当前选中的tab的索引
-                viewpager.setCurrentItem(tab.getPosition(),true);
+                viewpager.setCurrentItem(tab.getPosition(),false);
             }
 
             @Override
@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //viewPager和tab_layout关联在一起
+        viewpager.setOffscreenPageLimit(titles.length);
         TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
             @Override
             public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {

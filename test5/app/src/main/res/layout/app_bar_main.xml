@@ -40,10 +40,10 @@
                 android:id="@+id/divider"
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="#101010"
+                android:background="@color/colorAccent"
                 android:layout_toRightOf="@drawable/baseline_search_24"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="33dp"/>
+                android:layout_marginLeft="38dp"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
@@ -51,7 +51,7 @@
                 android:textColor="#000000"
                 android:gravity="center"
                 android:textStyle="bold"
-                android:layout_marginLeft="38dp"/>
+                android:layout_marginLeft="45dp"/>
 
         </RelativeLayout>
 

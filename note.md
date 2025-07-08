@@ -1348,3 +1348,179 @@ gson库用于解析json
 
 
 ### 实现新闻列表
+
+
+
+之前设置了ViewPager来进行页面的切换，每一个页面都是一个fragment，fragment_tab_news.xml是所有页面的通用布局文件，具体的内容会根据页面的不同发生改变
+
+fragment_tab_news.xml中使用了RecyclerView，这是一个可以滚动的列表，用于展示一条条的新闻（注意要加上依赖`implementation(libs.recyclerview)`）（它只是一个容器，并不关心里面放了什么，具体放的东西由adapter确定）
+
+RecyclerView的具体的样式需要定义一个adapter来进行确定，在adapter中获取数据并且指定数据展示的样式（item_news.xml），然后将这一条条的新闻给RecyclerView进行展示
+
+adapter负责告诉RecyclerView：
+
+* 有多少条新闻（`getItemCount()`）；
+* 每一条新闻长什么样（`onCreateViewHolder()`）；
+* 每一条新闻的内容怎么填充（`onBindViewHolder()`）
+
+
+
+适配器类的定义：
+
+* `class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder>`，该类继承自RecyclerView中的Adapter内部类，泛型参数就是它自己内部定义的holder类
+
+* `private List<FetchNews.NewsItem> newsList;`成员变量就是新闻列表
+* `public NewsAdapter(List<FetchNews.NewsItem> list)`构造适配器的时候会传入具体的新闻列表，后面就会根据这个新闻列表来构建页面
+* `static class NewsViewHolder extends RecyclerView.ViewHolder`静态内部类NewsViewHolder，用于管理一个item中的控件，它保存了item中每个控件的引用，这样就只需要使用一次findViewById来获取控件的引用，从而节约资源
+* `public NewsViewHolder onCreateViewHolder(ViewGroup parent, int viewType) `根据之前定义的item_news.xml来创建对应形式的View，然后创建用于管理这个View的NewsViewHold对象并返回
+* `public void onBindViewHolder(NewsViewHolder holder, int position)`给第position条新闻设置内容
+
+```java
+package com.java.huhaoran;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+
+import java.util.List;
+
+
+//定义RecyclerView的适配器
+public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder>{
+    //成员变量是新闻列表
+    private List<FetchNews.NewsItem> newslist;
+    //构造函数将列表传入
+    public NewsAdapter(List<FetchNews.NewsItem> newslist) {
+        this.newslist = newslist;
+    }
+    //创建ViewHolder
+    static class NewsViewHolder extends RecyclerView.ViewHolder {
+        //成员变量就是一条item中每个控件的引用
+        TextView title, publisher, time;
+        ImageView image;
+        public NewsViewHolder(View view) {
+            super(view);
+            title = (TextView) view.findViewById(R.id.title);
+            publisher = (TextView) view.findViewById(R.id.publisher);
+            time = (TextView) view.findViewById(R.id.time);
+            image = (ImageView) view.findViewById(R.id.image);
+        }
+
+    }
+    //创建ViewHolder
+    @Override
+    public NewsViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        //创建item的布局,inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean attachToRoot)
+        //参数：要使用的布局文件，父布局，是否将布局文件添加为父布局的子元素
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news, parent, false);
+        NewsViewHolder holder = new NewsViewHolder(view);
+        return holder;
+    }
+
+    //获取图片链接,因为直接爬取得到的图片链接可能有中括号和,分割，所以需要处理
+    String[] getLinks(String input) {
+        if(input.length() <= 2) {
+            return null;
+        }
+        input = input.substring(1, input.length()-1);
+        String[] links = input.split(",\\s*");
+        return links;
+    }
+
+    //为item设置内容,holder是当前item的ViewHolder,position是当前item的位置
+    @Override
+    public void onBindViewHolder(NewsViewHolder holder, int position) {
+        //获取需要的那条新闻
+        FetchNews.NewsItem newsitem = newslist.get(position);
+        holder.title.setText(newsitem.title);
+        holder.publisher.setText(newsitem.publisher);
+        holder.time.setText(newsitem.publishTime);
+        String[] links = getLinks(newsitem.image);
+        if(links != null && links.length > 0) {
+            // 使用 Glide 加载网络图片
+            Glide.with(holder.itemView.getContext())  // 使用 ViewHolder 的 itemView 的 Context
+                    .load(links[0])                       // 图片 URL
+                    .into(holder.image);              // 绑定到 ImageView
+        }
+
+    }
+    //获取item的总数
+    @Override
+    public int getItemCount() {
+        return newslist.size();
+    }
+}
+```
+
+在TabNewsFragment中创建视图：
+
+```java
+@Override
+public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+    RecyclerView recyclerView = view.findViewById(R.id.news_tab_recycler);
+    recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+    // 开线程请求数据
+    new Thread(() -> {
+        //根据newInstance时传入的title，请求数据
+        FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1980-01-01", "", new String[]{}, title, "1");
+        if (response != null && response.data != null) {
+            requireActivity().runOnUiThread(() -> {
+                NewsAdapter adapter = new NewsAdapter(response.data);
+                recyclerView.setAdapter(adapter);
+            });
+        }
+    }).start();
+}
+```
+
+
+
+流程示意：
+
+1. 当用户滑到某个页面（比如军事），ViewPager就会调用creatFragment(position)来创建页面
+2. 在creatFragment里面会调用TabNewsFragment.newInstance("军事")，
+3. onCreate() 获取参数 "军事" 
+4. onCreateView() 加载 fragment_tab_news.xml
+5. 设置 RecyclerView、Adapter
+6. 调用 FetchNews.fetchNews(...) 获取军事类新闻
+7. 主线程更新 Adapter 展示新闻数据（item_news.xml 样式）
+
+
+
+
+
+
+
+#### 一个可能实现点赞，收藏，评论的方案
+
+在FetchNews.NewsItem中增加属性记录点赞数，收藏数，评论列表，并且默认为空
+
+在服务器中保存键值对，key是新闻标题，value是新闻相关信息，每次爬取新闻都需要去数据库中检查是否记录了相关点赞评论信息
+
+后端服务器能否实现？？
+
+
+
+
+
+
+
+
+
+# bug
+
+1. 在刚刚打开app时点击第6个标签页就会闪退，点击其他页面就不会，先点击其他页面再点击第6个页面也不会
+
+   解决：viewpager.setOffscreenPageLimit(titles.length);加上这一行代码，将所有页面全部预先缓存就不会闪退了
+
+   不知道为什么，反正这样可以解决
+
+一些图片无法加载出来

@@ -1,5 +1,9 @@
 package com.java.huhaoran;
 
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -71,16 +75,63 @@ public class TabNewsFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.news_tab_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
+
+        //----------------------------该类用于实现RecyclerView的分割线-----------------------
+        class SimpleDividerDecoration extends RecyclerView.ItemDecoration {
+
+            private int dividerHeight;
+            private Paint dividerPaint;
+
+            public SimpleDividerDecoration(Context context) {
+                dividerPaint = new Paint();
+                dividerPaint.setColor(context.getResources().getColor(R.color.colorAccent));
+                dividerHeight = context.getResources().getDimensionPixelSize(R.dimen.divider_height);
+            }
+
+
+            @Override
+            public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+                super.getItemOffsets(outRect, view, parent, state);
+                outRect.bottom = dividerHeight;
+            }
+
+            @Override
+            public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
+                int childCount = parent.getChildCount();
+                int left = parent.getPaddingLeft();
+                int right = parent.getWidth() - parent.getPaddingRight();
+
+                for (int i = 0; i < childCount - 1; i++) {
+                    View view = parent.getChildAt(i);
+                    float top = view.getBottom();
+                    float bottom = view.getBottom() + dividerHeight;
+                    c.drawRect(left, top, right, bottom, dividerPaint);
+                }
+            }
+        }
+        //----------------------------该类用于实现RecyclerView的分割线-----------------------
+
         // 开线程请求数据
         new Thread(() -> {
             //根据newInstance时传入的title，请求数据
-            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1900-01-01", "", new String[]{}, title, "1");
+            String title_tmp = new String();
+            if(title.equals("全部")) {
+                title_tmp = "";
+            }
+            else {
+                title_tmp = title;
+            }
+            FetchNews.NewsResponse response = FetchNews.fetchNews("15", "1900-01-01", "2025-7-10", new String[]{}, title_tmp, "1");
             if (response != null && response.data != null) {
+                if (!isAdded() || getActivity() == null) return; // 添加这个判断
                 requireActivity().runOnUiThread(() -> {
+                    if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
                     NewsAdapter adapter = new NewsAdapter(response.data);
                     recyclerView.setAdapter(adapter);
+                    recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
                 });
             }
+
         }).start();
     }
 }

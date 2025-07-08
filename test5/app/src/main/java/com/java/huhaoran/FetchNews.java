@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -53,6 +54,12 @@ public class FetchNews {
         //使用了OkHttp提供的构建器模式，url是请求的地址，.build()方法构建出请求的对象
         Request request = new Request.Builder()
                 .url(url)
+                .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 9.0; Mobile; rv:68.0) Gecko/68.0 Firefox/68.0")
+                .addHeader("Accept", "application/json, text/plain, */*")
+                .addHeader("Accept-Language", "zh-CN,zh;q=0.9")
+                .addHeader("Referer", "https://www.inewsweek.cn/")
+                .addHeader("Origin", "https://www.inewsweek.cn")
+                .addHeader("Connection", "keep-alive")
                 .build();
 
         try {
@@ -67,9 +74,6 @@ public class FetchNews {
             if (response.isSuccessful()) {
                 // 获取返回的 JSON 字符串
                 String json = response.body().string();
-
-                // 打印原始 JSON 字符串
-                System.out.println("原始JSON：\n" + json.substring(0, Math.min(500, json.length())) + "...\n");
 
                 // 使用 Gson 解析
                 Gson gson = new Gson();
@@ -91,6 +95,36 @@ public class FetchNews {
 
         return null;
     }
+
+    //获取图片链接,因为直接爬取得到的图片链接可能有中括号和,分割，所以需要处理
+    //换了一个更加健壮的处理方式，因为后端接口的数据格式混乱
+    public static String[] getLinks(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return new String[0];
+        }
+
+        input = input.trim();
+
+        // 如果是 [xxx, yyy] 形式，先去掉中括号
+        if (input.startsWith("[") && input.endsWith("]")) {
+            input = input.substring(1, input.length() - 1).trim();
+        }
+
+        // 用逗号分隔
+        String[] rawParts = input.split(",\\s*");
+        List<String> validLinks = new ArrayList<>();
+
+        for (String part : rawParts) {
+            part = part.trim();
+            // 过滤空项、空字符串、null 字符
+            if (!part.isEmpty() && !part.equalsIgnoreCase("null")) {
+                validLinks.add(part);
+            }
+        }
+
+        return validLinks.toArray(new String[0]);
+    }
+
 
 
     // JSON 数据结构类
