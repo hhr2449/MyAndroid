@@ -6,7 +6,13 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -26,7 +32,10 @@ public class FetchNews {
             url += "&endDate=" + endDate;
         }
         else {
-            url += "&endDate=当前时间";
+            // 如果没有指定结束日期，则使用当前时间
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String currentDateTime = sdf.format(new Date());
+            url += "&endDate=" + currentDateTime;
         }
 
         url += "&words=";
@@ -69,7 +78,6 @@ public class FetchNews {
             //参数是请求对象，表示该网络请求的内容
             //execute() 方法发送请求并获取响应
             Response response = client.newCall(request).execute();
-
             //如果请求成功，那么response的body里面就包含了我们要的新闻数据，格式为json
             if (response.isSuccessful()) {
                 // 获取返回的 JSON 字符串

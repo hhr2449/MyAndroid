@@ -1,6 +1,7 @@
 package com.java.huhaoran;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -19,12 +20,19 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.java.huhaoran.R;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 public class MainActivity extends AppCompatActivity {
     private TabLayout tablayout;
     private ViewPager2 viewpager;
     //这是新闻主题的数组，用来创建TabLayout的标签
     private String[] titles = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
+
+    //newsCache用于缓存新闻数据，避免重复请求
+    public static Map<String, List<FetchNews.NewsItem>> newsCache = new HashMap<>();
 
 
     @Override
@@ -79,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //设置预加载界面数
+        viewpager.setOffscreenPageLimit(1);
         //tablayout点击事件
         tablayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -100,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //viewPager和tab_layout关联在一起
-        viewpager.setOffscreenPageLimit(titles.length);
         TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
             @Override
             public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {

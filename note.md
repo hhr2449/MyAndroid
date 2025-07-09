@@ -1316,6 +1316,10 @@ gson库用于解析json
 </network-security-config>
 ```
 
+还要加上这个：<uses-permission android:name="android.permission.INTERNET" />
+
+
+
 ##### 重要！！！
 
 
@@ -1485,19 +1489,315 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
 
 流程示意：
 
-1. 当用户滑到某个页面（比如军事），ViewPager就会调用creatFragment(position)来创建页面
-2. 在creatFragment里面会调用TabNewsFragment.newInstance("军事")，
-3. onCreate() 获取参数 "军事" 
-4. onCreateView() 加载 fragment_tab_news.xml
-5. 设置 RecyclerView、Adapter
-6. 调用 FetchNews.fetchNews(...) 获取军事类新闻
-7. 主线程更新 Adapter 展示新闻数据（item_news.xml 样式）
+1. 首先，我们创建了一个TabLayout，作为上方的标签栏，然后创建了一个ViewPager2，作为展示具体页面的容器
+
+2. 但是ViewPager2只是一个容器，它并不知道里面需要展示什么东西，所以我们需要设置一个Adapter来决定ViewPager2展示的内容，这里我们选择创建一个`FragmentStateAdapter`，也就是ViewPager2中的一个页面是一个Fragment，具体创建过程如下：
+
+   1. ```java
+      viewpager.setAdapter(new FragmentStateAdapter(this) {
+          //这里创建了一个匿名的FragmentStateAdapter对象
+          @NonNull
+          @Override
+          //这个方法的返回值是一个Fragment对象，当ViewPager需要显示一个页面的时候就会调用
+          //这个方法，根据位置返回一个Fragment对象
+          public Fragment createFragment(int position) {
+              //使用newInstance()方法创建一个Fragment对象，传入的主题参数使用titles[position]获取
+              return TabNewsFragment.newInstance(titles[position]);
+          }
+          @Override
+          //告诉ViewPager一共有多少个页面
+          public int getItemCount() {
+              //总的页面数就是标题的个数
+              return titles.length;
+          }
+      });
+      ```
+
+   2. `FragmentStateAdapter`决定了两件事情，首先，告诉ViewPager2一共需要多少个页面`int getItemCount()`（这里就是我们的标题数），然后将每个页面需要展示的fragment(根据页面的position来确定)返回给ViewPager2（` Fragment createFragment(int position)`），具体创建fragment的过程被外包给TabNewsFragment类来完成，TabNewsFragment提供了对外API：`TabNewsFragment.newInstance(titles[position]);`，可以实现根据新闻主题创建fragment，这里调用了这个API来创建具体需要展示的fragment，接下来看TabNewsFragment类的实现：
+
+      1. ```java
+         public static TabNewsFragment newInstance(String title) {
+             //newInstance()方法返回一个TabNewsFragment对象
+             TabNewsFragment fragment = new TabNewsFragment();
+             //Bundle类是Android中用于在Activity之间传递数据的类
+             //创建Bundle对象，将参数传入并且使用setArguments()方法将Bundle对象与Fragment对象关联起来
+             //Bundle对象的作用在于，当旋转屏幕等情况下，Fragment需要销毁后再重新创建，此时会保存Bundle对象用于重建
+             //如果直接赋值给成员变量，那么销毁的时候数据就会丢失
+             Bundle args = new Bundle();
+             args.putString(ARG_PARAM, title);
+             fragment.setArguments(args);
+             return fragment;
+         }
+         ```
+
+      2. 首先是newInstance方法，在这里创建出了TabNewsFragment类对象fragment，将其需要的参数（title）包装进Bundle后将其绑定在fragment中，并且返回，注意这里采用了懒加载，此时并没有生成具体的页面，只是创建了页面的对象并且绑定相关的参数，通过这个对象可以产生我们需要的页面，但是只有在需要展示页面的时候才产生
+      3. **fragment的结构**：在fragment_tab_news.xml中定义了fragment的样式，主要是一个RecyclerView，用于展示一条条的新闻，**RecyclerView**同样也是一个容器，它也不知道具体应该展示什么，所以需要为其设置**Adapter**：
+         1. 首先，我们设置了多个不同的item_news.xml，用于规定不同图片数的新闻条的样式
+         2. 然后在NewsAdapter中，定义RecyclerView的Adadpter，他会决定两件事：产生多少个item,每个item都是什么样式的
+         3. `getItemCount()`方法返回item个数（新闻条数），用于产生对应数量的item
+         4. NewsAdapter中维护了一个newslist，是它要展示的新闻，构造它的时候需要将这个newslist传入，NewsAdapter就可以实现将这些news展示出来
+         5. `int getItemViewType(int position)`用于确定某个item需要采用的样式类别
+         6. 里面有一个内部类NewsViewHolder，每一个item对应一个其对象，用于管理item中控件的引用
+         7. `public NewsViewHolder onCreateViewHolder(ViewGroup parent, int viewType)`用于产生一个item，他会根据type来加载item的样式并且产生对应的NewsViewHolder类对象
+         8. 最后，在方法`public void onBindViewHolder(NewsViewHolder holder, int position)`，将每条新闻的具体内容设置在每条item中，实现了新闻的展示
+      4. 当需要展示页面的时候，系统会自动调用`onCreate`,`onCreateView`,`onViewCreated`,onCreate获取参数，OnCreateView用于初始化fragment的样式，onViewCreate用于加载RecyclerView
+         1. 在onViewCreate中，首先创建一个RecyclerView类的对象
+         2. 然后开一个线程获取新闻列表
+         3. 最后使用新闻列表构造Adapter,并且将这个Adapter绑定到RecyclerView类的对象，从而实现页面的创建
+
+3. 为了实现主题的切换，我们创建了一个TabLayoutMediator，用于TabLayout和ViewPager2的同步，创建过程如下：
+
+   1. 构造函数 `TabLayoutMediator(TabLayout tabLayout, ViewPager2 viewPager, TabConfigurationStrategy tabConfigurationStrategy)`，tabLayout和viewPager是想要同步的两个控件,TabConfigurationStrategy规定了每个tab的内容（也就是类型名）
+   2. 启用绑定，当TabLayout切换时，ViewPager2也会随之切换
+
+
+
+```java
++--------------------+
+|    MainActivity    |
++--------------------+
+          |
+          | 创建 TabLayout 和 ViewPager2
+          v
++-----------------------------+
+|   设置 FragmentStateAdapter |
++-----------------------------+
+          |
+          | 调用 createFragment(position)
+          v
++--------------------------------------+
+|  TabNewsFragment.newInstance(title)  |
++--------------------------------------+
+          |
+          | 创建 Fragment 对象并 setArguments(title)
+          v
++--------------------------+
+| TabNewsFragment 生命周期 |
++--------------------------+
+          |
+          | onCreate()   -->  读取 title 参数
+          | onCreateView() --> 加载 RecyclerView 布局
+          | onViewCreated()
+          v
++---------------------------------------------------+
+| 启动子线程 FetchNews.fetchNews(...) 获取新闻列表  |
++---------------------------------------------------+
+          |
+          v
++----------------------------------+
+|  构造 NewsAdapter(newslist)     |
++----------------------------------+
+          |
+          v
++----------------------------+
+| RecyclerView.setAdapter() |
++----------------------------+
+          |
+          v
++----------------------------+
+| 显示新闻列表（多种样式）   |
++----------------------------+
+
+
+```
+
+
+
+
+
+示例：
+
+1. 当用户滑到某个页面（比如军事），TabLayout和ViewPager会实现同步
+
+2. ViewPager就会调用creatFragment(position)来创建页面
+
+3. 在creatFragment里面会调用TabNewsFragment.newInstance("军事")，创建出TabNewsFragment类对象并且绑定title参数
+
+4. 当需要展示出页面时，系统自动调用onCreate() 获取参数 "军事" 
+
+5. onCreateView() 加载 fragment_tab_news.xml
+
+6. 调用onViewCreate()方法，在该方法中会创建出具体的页面展示效果
+
+   1. 创建出RecyclerView类的对象，作为页面展示容器
+   2. 开一个线程，调用fetchNews(title)方法，获取新闻列表
+   3. 构造RecyclerView的Adapter，并且绑定，实现页面的展示
+
+   
 
 
 
 
 
 
+
+### 优化图片展示
+
+使用cardview作为图片展示台，并且设置圆角样式，`android:layout_centerInParent="true"`设置居中
+
+内部的imageView使用相等的weight来设置为等分，同时图片之间设置margin分隔
+
+```xml
+<!-- 图片区域 -->
+<androidx.cardview.widget.CardView
+    android:id="@+id/image_container"
+    android:layout_width="260dp"
+    android:layout_height="wrap_content"
+    android:layout_centerInParent="true"
+    android:layout_below="@id/title"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    android:layout_marginStart="0dp"
+    android:layout_marginEnd="0dp"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:padding="8dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/image1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/image_rounded_background" />
+
+        <ImageView
+            android:id="@+id/image2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:background="@drawable/image_rounded_background" />
+
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+```
+
+
+
+### 优化页面加载
+
+FragmentStateAdapter为了节省内存，只会缓存一定数量的页面（使用viewpager.setOffscreenPageLimit(limit);）来设置缓存的范围，在当前页面左右limit范围内的页面会被保存，超过这个范围内的页面会被销毁
+
+如果切换了Tab导致当前页面被销毁，下一次想要切换到这个页面就要重新进行网络请求，比较耗时间
+
+可以尝试缓存新闻列表，每次销毁fragment但是新闻列表不销毁，可以节约网络请求的时间
+
+```java
+//MainActivity.java
+//newsCache用于缓存新闻数据，避免重复请求
+public static Map<String, List<FetchNews.NewsItem>> newsCache = new HashMap<>();
+```
+
+
+
+```java
+//TabNewsFragment.java
+//----------------------------实现数据的加载-----------------------
+
+//如果有缓存数据，就不开线程去请求了
+if(newsCache.containsKey(title)) {
+    List<FetchNews.NewsItem> responseData = newsCache.get(title);
+    if (responseData != null) {
+        if (!isAdded() || getActivity() == null) return; // 添加这个判断
+        requireActivity().runOnUiThread(() -> {
+            if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
+            NewsAdapter adapter = new NewsAdapter(responseData);
+            recyclerView.setAdapter(adapter);
+            recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
+        });
+    }
+    return;
+}
+// 开线程请求数据
+new Thread(() -> {
+    //根据newInstance时传入的title，请求数据
+    String title_tmp = new String();
+    if(title.equals("全部")) {
+        title_tmp = "";
+    }
+    else {
+        title_tmp = title;
+    }
+    FetchNews.NewsResponse response = FetchNews.fetchNews("15", "1900-01-01", "2025-7-10", new String[]{}, title_tmp, "1");
+    if (response != null && response.data != null) {
+        // 缓存数据
+        newsCache.put(title, response.data);
+        if (!isAdded() || getActivity() == null) return; // 添加这个判断
+        requireActivity().runOnUiThread(() -> {
+            if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
+            NewsAdapter adapter = new NewsAdapter(response.data);
+            recyclerView.setAdapter(adapter);
+            recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
+        });
+    }
+
+}).start();
+//----------------------------实现数据的加载-----------------------
+```
+
+
+
+
+
+
+
+
+
+
+
+### bug
+
+1. 在刚刚打开app时点击第6个标签页就会闪退，点击其他页面就不会，先点击其他页面再点击第6个页面也不会
+
+   解决：viewpager.setOffscreenPageLimit(titles.length);加上这一行代码，将所有页面全部预先缓存就不会闪退了
+
+   ```java
+   if (response != null && response.data != null) {
+       if (!isAdded() || getActivity() == null) return; // 添加这个判断
+       requireActivity().runOnUiThread(() -> {
+           if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
+           NewsAdapter adapter = new NewsAdapter(response.data);
+           recyclerView.setAdapter(adapter);
+           recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
+       });
+   }
+   ```
+
+   在这里添加检查似乎也可以避免闪退，而且性能更好
+
+2. 一些图片无法加载出来
+
+   在manifest中加上一行
+
+   
+
+   ```xml
+   android:usesCleartextTraffic="true"
+   ```
+
+   ![在这里插入图片描述](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/fe8eb3aee743256793e4cd1c531c13fb.png)
+
+​	可能是由于网络协议的兼容问题
+
+### 功能思考
+
+图片展示样式(实现)
+
+懒加载
+
+缓存，不重复加载
 
 #### 一个可能实现点赞，收藏，评论的方案
 
@@ -1507,20 +1807,4 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
 
 后端服务器能否实现？？
 
-
-
-
-
-
-
-
-
-# bug
-
-1. 在刚刚打开app时点击第6个标签页就会闪退，点击其他页面就不会，先点击其他页面再点击第6个页面也不会
-
-   解决：viewpager.setOffscreenPageLimit(titles.length);加上这一行代码，将所有页面全部预先缓存就不会闪退了
-
-   不知道为什么，反正这样可以解决
-
-一些图片无法加载出来
+#### 申请分享

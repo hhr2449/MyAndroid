@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.okhttp)
     implementation(libs.recyclerview)
+    implementation(libs.paging)
 
 
 }

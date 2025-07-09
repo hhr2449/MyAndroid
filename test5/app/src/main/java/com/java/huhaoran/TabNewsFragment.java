@@ -1,5 +1,7 @@
 package com.java.huhaoran;
 
+import static com.java.huhaoran.MainActivity.newsCache;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -15,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.util.List;
 
 
 public class TabNewsFragment extends Fragment {
@@ -111,6 +115,23 @@ public class TabNewsFragment extends Fragment {
         }
         //----------------------------该类用于实现RecyclerView的分割线-----------------------
 
+
+        //----------------------------实现数据的加载-----------------------
+
+        //如果有缓存数据，就不开线程去请求了
+        if(newsCache.containsKey(title)) {
+            List<FetchNews.NewsItem> responseData = newsCache.get(title);
+            if (responseData != null) {
+                if (!isAdded() || getActivity() == null) return; // 添加这个判断
+                requireActivity().runOnUiThread(() -> {
+                    if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
+                    NewsAdapter adapter = new NewsAdapter(responseData);
+                    recyclerView.setAdapter(adapter);
+                    recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
+                });
+            }
+            return;
+        }
         // 开线程请求数据
         new Thread(() -> {
             //根据newInstance时传入的title，请求数据
@@ -121,8 +142,10 @@ public class TabNewsFragment extends Fragment {
             else {
                 title_tmp = title;
             }
-            FetchNews.NewsResponse response = FetchNews.fetchNews("15", "1900-01-01", "2025-7-10", new String[]{}, title_tmp, "1");
+            FetchNews.NewsResponse response = FetchNews.fetchNews("15", "", "", new String[]{}, title_tmp, "1");
             if (response != null && response.data != null) {
+                // 缓存数据
+                newsCache.put(title, response.data);
                 if (!isAdded() || getActivity() == null) return; // 添加这个判断
                 requireActivity().runOnUiThread(() -> {
                     if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
@@ -133,5 +156,6 @@ public class TabNewsFragment extends Fragment {
             }
 
         }).start();
+        //----------------------------实现数据的加载-----------------------
     }
 }
