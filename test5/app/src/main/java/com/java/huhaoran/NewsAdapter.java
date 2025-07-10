@@ -144,4 +144,18 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     public int getItemCount() {
         return newslist.size();
     }
+
+
+    //方便上拉获取更多的时候增加数据
+    public void appendData(List<FetchNews.NewsItem> moreData) {
+        int previousSize = this.newslist.size(); // 获取当前数据集的大小
+        this.newslist.addAll(moreData);          // 将新数据追加到现有列表
+        notifyItemRangeInserted(previousSize, moreData.size()); // 通知适配器新增了数据
+    }
+
+    //方便刷新数据
+    public void updateData(List<FetchNews.NewsItem> newData) {
+        this.newslist = newData;          // 直接替换整个数据集
+        notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
+    }
 }

@@ -18,6 +18,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.scwang.smart.refresh.layout.api.RefreshLayout;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -30,9 +34,63 @@ public class TabNewsFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String title;
 
+    //当前页面的页数
+    private int currentPage = 1;
+
+    //每张页面的条数
+    private static final int PAGE_SIZE = 10;
+
+    //是否正在加载
+    //防止在开新的线程获取数据的时候又请求新的数据，
+    // 只要请求数据的线程没有结束就是true，此时禁止再次请求数据
+    boolean isLoading = false;
+
+    // RecyclerView 和 Adapter,因为在同一个界面中，recyclerView和adapter是同一个对象
+    //所以直接将其作为成员变量引用，避免重复创建
+    //NewsAdapter中提供了appendData()方法，将数据追加到adapter中，这样每次需要增加数据的时候可以直接添加进去,同时更新页面
+    //提供了updateData()方法，在刷新的时候可以直接调用，同时更新页面
+    private RecyclerView recyclerView;
+    private NewsAdapter newsAdapter;
+
     public TabNewsFragment() {
 
     }
+
+    //----------------------------该类用于实现RecyclerView的分割线-----------------------
+    class SimpleDividerDecoration extends RecyclerView.ItemDecoration {
+
+        private int dividerHeight;
+        private Paint dividerPaint;
+
+        public SimpleDividerDecoration(Context context) {
+            dividerPaint = new Paint();
+            dividerPaint.setColor(context.getResources().getColor(R.color.colorAccent));
+            dividerHeight = context.getResources().getDimensionPixelSize(R.dimen.divider_height);
+        }
+
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            super.getItemOffsets(outRect, view, parent, state);
+            outRect.bottom = dividerHeight;
+        }
+
+        @Override
+        public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
+            int childCount = parent.getChildCount();
+            int left = parent.getPaddingLeft();
+            int right = parent.getWidth() - parent.getPaddingRight();
+
+            for (int i = 0; i < childCount - 1; i++) {
+                View view = parent.getChildAt(i);
+                float top = view.getBottom();
+                float bottom = view.getBottom() + dividerHeight;
+                c.drawRect(left, top, right, bottom, dividerPaint);
+            }
+        }
+    }
+    //----------------------------该类用于实现RecyclerView的分割线-----------------------
+
 
     public static TabNewsFragment newInstance(String title) {
         //newInstance()方法返回一个TabNewsFragment对象
@@ -66,96 +124,128 @@ public class TabNewsFragment extends Fragment {
         }
     }
 
+    //加载更多数据
+    private void loadMoreNewsData() {
+        // 防止重复加载
+        if (isLoading) return;
+        isLoading = true;
+
+        // 递增页码
+        currentPage++;
+
+        // 从网络请求下一页数据
+        new Thread(() -> {
+            //开线程请求数据
+            String title_tmp = title.equals("全部") ? "" : title;
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+            if (response != null && response.data != null) {
+                //如果请求到数据了，则要将数据添加到缓存，并且更新界面
+                // 将新数据追加到缓存
+
+                //在缓存Map中找到对应标题的缓存
+                List<FetchNews.NewsItem> cachedData = newsCache.get(title);
+                if (cachedData != null) {
+                    // 如果缓存中有数据，则将新的数据追加到对应标题的缓存List中，然后将List放入
+                    cachedData.addAll(response.data);
+                    newsCache.put(title, cachedData);
+                } else {
+                    // 如果缓存中没有数据（理论上不应该发生，因为首次加载已经缓存），就直接将新获取的数据加入
+                    newsCache.put(title, response.data);
+                }
+
+                //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
+                requireActivity().runOnUiThread(() -> {
+                    //增加数据
+                    newsAdapter.appendData(response.data);
+                    RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                    refreshLayout.finishLoadMore(); // 结束加载动画
+                    isLoading = false; // 允许下次加载
+                });
+            } else {
+                requireActivity().runOnUiThread(() -> {
+                    RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                    refreshLayout.finishLoadMore(false); // 加载失败
+                    isLoading = false; // 允许下次加载
+                });
+            }
+        }).start();
+    }
+
+
+    //刷新数据
+
+    private void loadNewsData(boolean isRefresh) {
+        currentPage++;
+
+        new Thread(() -> {
+            String title_tmp = title.equals("全部") ? "" : title;
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+            if (response != null && response.data != null) {
+                newsCache.put(title, response.data); // 缓存数据
+                requireActivity().runOnUiThread(() -> {
+                    newsAdapter.updateData(response.data); // 更新适配器数据
+                    RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                    refreshLayout.finishRefresh(); // 结束刷新动画
+                });
+            } else {
+                requireActivity().runOnUiThread(() -> {
+                    if (isRefresh) {
+                        RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                        refreshLayout.finishRefresh(false); // 刷新失败
+                    }
+                });
+            }
+        }).start();
+    }
+
+
+    //设置事件，每当上拉或是下拉就会触发事件从而进行更新或是获取更多数据
+    private void initRefreshLayout() {
+        RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+
+        // 下拉刷新
+        refreshLayout.setOnRefreshListener(refreshlayout -> {
+            newsCache.remove(title); // 移除缓存
+            loadNewsData(true); // 加载第一页
+        });
+
+        // 上拉加载更多
+        refreshLayout.setOnLoadMoreListener(refreshlayout -> {
+            // 加载下一页
+            loadMoreNewsData();
+        });
+    }
+
+
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_tab_news, container, false);
+        // 使用 SmartRefreshLayout 的布局
+        View view = inflater.inflate(R.layout.fragment_tab_news, container, false);
+        recyclerView = view.findViewById(R.id.news_tab_recycler);
+        RefreshLayout refreshLayout = view.findViewById(R.id.refreshLayout);
+
+        // 设置 RecyclerView 的 LayoutManager
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // 初始化 Adapter，初始为空列表
+        newsAdapter = new NewsAdapter(new ArrayList<>());
+        recyclerView.setAdapter(newsAdapter);
+        recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
+
+        // 返回视图
+        return view;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        RecyclerView recyclerView = view.findViewById(R.id.news_tab_recycler);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
+        // 初始化 SmartRefreshLayout
+        initRefreshLayout();
 
-        //----------------------------该类用于实现RecyclerView的分割线-----------------------
-        class SimpleDividerDecoration extends RecyclerView.ItemDecoration {
-
-            private int dividerHeight;
-            private Paint dividerPaint;
-
-            public SimpleDividerDecoration(Context context) {
-                dividerPaint = new Paint();
-                dividerPaint.setColor(context.getResources().getColor(R.color.colorAccent));
-                dividerHeight = context.getResources().getDimensionPixelSize(R.dimen.divider_height);
-            }
-
-
-            @Override
-            public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-                super.getItemOffsets(outRect, view, parent, state);
-                outRect.bottom = dividerHeight;
-            }
-
-            @Override
-            public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
-                int childCount = parent.getChildCount();
-                int left = parent.getPaddingLeft();
-                int right = parent.getWidth() - parent.getPaddingRight();
-
-                for (int i = 0; i < childCount - 1; i++) {
-                    View view = parent.getChildAt(i);
-                    float top = view.getBottom();
-                    float bottom = view.getBottom() + dividerHeight;
-                    c.drawRect(left, top, right, bottom, dividerPaint);
-                }
-            }
-        }
-        //----------------------------该类用于实现RecyclerView的分割线-----------------------
-
-
-        //----------------------------实现数据的加载-----------------------
-
-        //如果有缓存数据，就不开线程去请求了
-        if(newsCache.containsKey(title)) {
-            List<FetchNews.NewsItem> responseData = newsCache.get(title);
-            if (responseData != null) {
-                if (!isAdded() || getActivity() == null) return; // 添加这个判断
-                requireActivity().runOnUiThread(() -> {
-                    if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
-                    NewsAdapter adapter = new NewsAdapter(responseData);
-                    recyclerView.setAdapter(adapter);
-                    recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
-                });
-            }
-            return;
-        }
-        // 开线程请求数据
-        new Thread(() -> {
-            //根据newInstance时传入的title，请求数据
-            String title_tmp = new String();
-            if(title.equals("全部")) {
-                title_tmp = "";
-            }
-            else {
-                title_tmp = title;
-            }
-            FetchNews.NewsResponse response = FetchNews.fetchNews("15", "", "", new String[]{}, title_tmp, "1");
-            if (response != null && response.data != null) {
-                // 缓存数据
-                newsCache.put(title, response.data);
-                if (!isAdded() || getActivity() == null) return; // 添加这个判断
-                requireActivity().runOnUiThread(() -> {
-                    if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
-                    NewsAdapter adapter = new NewsAdapter(response.data);
-                    recyclerView.setAdapter(adapter);
-                    recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
-                });
-            }
-
-        }).start();
-        //----------------------------实现数据的加载-----------------------
+        // 首次加载数据（无缓存时）
+        loadNewsData(true);
     }
 }

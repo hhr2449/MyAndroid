@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
     //newsCache用于缓存新闻数据，避免重复请求
     public static Map<String, List<FetchNews.NewsItem>> newsCache = new HashMap<>();
 
+    //缓存每个分类当前加载到的页数
+    public static Map<String, Integer> currentPage = new HashMap<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

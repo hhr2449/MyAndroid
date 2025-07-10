@@ -895,7 +895,49 @@ app:backgroundTint="@null"
 
 
 
+
+
+## runOnUiThread
+
+
+
+```
+runOnUiThread(Runnable runnable)
+```
+
+在一个新开的线程中是不允许直接修改ui界面的，这时候可以使用runOnUiThread，接受一个Runnable接口的对象，在run方法中可以执行ui的修改，常常用于网络请求中修改界面
+
+
+
+## notifyItemRangeInserted方法的使用
+
+*notifyItemRangeInserted*方法用于通知*RecyclerView*，从指定位置开始，有一定数量的新数据项被插入。这个方法接受两个参数：*startPosition*和*itemCount*。*startPosition*是数据插入的起始位置，*itemCount*是被插入的数据数量。
+
+例如，如果你在列表的第5个位置插入了3个新的数据项，你应该这样调用这个方法：
+
+adapter.notifyItemRangeInserted(5, 3);
+
+这将导致*RecyclerView*从第5个位置开始刷新3个数据项，而不会影响其他位置的数据
+
+
+
+## fragment生命周期中的三个初始化方法
+
+1. onCreate():用于初始化视图以外的内容，比如初始化变量等
+
+   
+
+2. onCreateView(): 在onCreateView()方法中，你需要创建Fragment的视图层次结构（UI）。你应该使用LayoutInflater来将布局文件实例化为一个View对象，并在这个方法中返回该视图对象。这个方法被视为Fragment生命周期的一部分，用于创建Fragment的用户界面。在这个方法中，你只负责创建视图，还不能对视图进行操作，例如设置监听器等。这个方法返回的视图将会被显示在Fragment的容器中。
+
+   也就是创建fragment的视图（View）对象，这个View对象的类型不确定，可以是线性等一切布局
+
+   
+
+3. onViewCreated(): onViewCreated()方法是在onCreateView()方法完成后被调用的。在onViewCreated()方法中，你可以对Fragment的视图进行初始化、设置监听器、绑定数据等操作。你可以使用view.findViewById()方法获取到视图中的控件，并对其进行操作。这个方法可以访问到Fragment的视图，并允许你对其进行进一步的操作。在onViewCreated()方法中，你可以安全地操作Fragment的视图，包括设置监听器、绑定数据、处理用户交互等操作。
+
 # 大作业笔记
+
+
 
 
 
@@ -1749,11 +1791,252 @@ new Thread(() -> {
 
 
 
+### 实现刷新和更多
+
+使用了[SmartRefreshLayout](https://github.com/scwang90/SmartRefreshLayout)来实现这个效果
+
+```xml
+<!--fragment_tab_news.xml-->
+
+<com.scwang.smart.refresh.layout.SmartRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/refreshLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+    <com.scwang.smart.refresh.header.BezierRadarHeader
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/news_tab_recycler"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:padding="8dp"/>
+    <com.scwang.smart.refresh.footer.BallPulseFooter
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+</com.scwang.smart.refresh.layout.SmartRefreshLayout>
+```
+
+首先更新xml文件，将RecyclerView置于martRefreshLayout控件下，这个控件可以实现上拉和下拉的效果，还可以实现监听器
+
+BezierRadarHeader，BallPulseFooter分别是上拉和下拉的动画效果
 
 
 
+新增了
+
+```java
+private RecyclerView recyclerView;
+private NewsAdapter newsAdapter;
+private int currentPage = 1;
+boolean isLoading = false;
+```
+
+这四个成员变量，前两个是当前页面的RecyclerView及其适配器的引用，因为接下来要在上下拉的时候对其进行更新，所以将其作为成员变量引用起来会更加方便
+
+currentPage是当前网络请求到的页数，因为如果一直请求第一页那么请求到的数据是一样的，必须要递增页数获取新的数据
+
+isLoading是表示当前是否在加载数据，因为请求数据是新开一个进程，所以要增加是否正在加载的判断，防止反复请求
 
 
+
+因为有了上拉和下拉，所以页面的初始化和更新逻辑有所改变：
+
+两种更新逻辑：
+
+1. 新请求一些数据，将这些数据添加到当前缓存中，更新界面（上拉更多）
+2. 新请求一些数据，清空缓存，将数据放入（下拉刷新）
+
+更新Adapter和更新界面的逻辑放在了NewsAdapter中：
+
+```java
+public void appendData(List<FetchNews.NewsItem> moreData) {
+    int previousSize = this.newslist.size(); // 获取当前数据集的大小
+    this.newslist.addAll(moreData);          // 将新数据追加到现有列表
+    notifyItemRangeInserted(previousSize, moreData.size()); // 通知适配器新增了数据，从第previousSize个item开始，后面moreData.size()个item都要更新
+}
+
+//方便刷新数据
+public void updateData(List<FetchNews.NewsItem> newData) {
+    this.newslist = newData;          // 直接替换整个数据集
+    notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
+}
+```
+
+因为成员变量中已经维护了当前页面RecyclerView对象的Adapter，所以要r更新页面只需要通过adapte调用这两个函数即可
+
+
+
+第一种更新方式：
+
+```java
+private void loadMoreNewsData() {
+    // 防止重复加载
+    if (isLoading) return;
+    isLoading = true;
+
+    // 递增页码
+    currentPage++;
+
+    // 从网络请求下一页数据
+    new Thread(() -> {
+        //开线程请求数据
+        String title_tmp = title.equals("全部") ? "" : title;
+        FetchNews.NewsResponse response = FetchNews.fetchNews("15", "2020-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+        if (response != null && response.data != null) {
+            //如果请求到数据了，则要将数据添加到缓存，并且更新界面
+            // 将新数据追加到缓存
+
+            //在缓存Map中找到对应标题的缓存
+            List<FetchNews.NewsItem> cachedData = newsCache.get(title);
+            if (cachedData != null) {
+                // 如果缓存中有数据，则将新的数据追加到对应标题的缓存List中，然后将List放入
+                cachedData.addAll(response.data);
+                newsCache.put(title, cachedData);
+            } else {
+                // 如果缓存中没有数据（理论上不应该发生，因为首次加载已经缓存），就直接将新获取的数据加入
+                newsCache.put(title, response.data);
+            }
+
+            //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
+            requireActivity().runOnUiThread(() -> {
+                //增加数据，同时更新界面
+                newsAdapter.appendData(response.data);
+                RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                refreshLayout.finishLoadMore(); // 结束加载动画
+                isLoading = false; // 允许下次加载
+            });
+        } else {
+            requireActivity().runOnUiThread(() -> {
+                RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                refreshLayout.finishLoadMore(false); // 加载失败
+                isLoading = false; // 允许下次加载
+            });
+        }
+    }).start();
+}
+```
+
+
+
+第二种更新方式：
+
+```java
+private void loadMoreNewsData() {
+    // 防止重复加载
+    if (isLoading) return;
+    isLoading = true;
+
+    // 递增页码
+    currentPage++;
+
+    // 从网络请求下一页数据
+    new Thread(() -> {
+        //开线程请求数据
+        String title_tmp = title.equals("全部") ? "" : title;
+        FetchNews.NewsResponse response = FetchNews.fetchNews("15", "2020-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+        if (response != null && response.data != null) {
+            //如果请求到数据了，则要将数据添加到缓存，并且更新界面
+            // 将新数据追加到缓存
+
+            //在缓存Map中找到对应标题的缓存
+            List<FetchNews.NewsItem> cachedData = newsCache.get(title);
+            if (cachedData != null) {
+                // 如果缓存中有数据，则将新的数据追加到对应标题的缓存List中，然后将List放入
+                cachedData.addAll(response.data);
+                newsCache.put(title, cachedData);
+            } else {
+                // 如果缓存中没有数据（理论上不应该发生，因为首次加载已经缓存），就直接将新获取的数据加入
+                newsCache.put(title, response.data);
+            }
+
+            //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
+            requireActivity().runOnUiThread(() -> {
+                //增加数据
+                newsAdapter.appendData(response.data);
+                RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                refreshLayout.finishLoadMore(); // 结束加载动画
+                isLoading = false; // 允许下次加载
+            });
+        } else {
+            requireActivity().runOnUiThread(() -> {
+                RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                refreshLayout.finishLoadMore(false); // 加载失败
+                isLoading = false; // 允许下次加载
+            });
+        }
+    }).start();
+}
+```
+
+
+
+最开始，调用onCreatView来初始化页面：
+
+此时我们获取了RecyclerView和Adapter的引用，同时进行了页面布局的初始化
+
+```java
+public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                         Bundle savedInstanceState) {
+    // 使用 SmartRefreshLayout 的布局
+    View view = inflater.inflate(R.layout.fragment_tab_news, container, false);
+    recyclerView = view.findViewById(R.id.news_tab_recycler);
+    RefreshLayout refreshLayout = view.findViewById(R.id.refreshLayout);
+
+    // 设置 RecyclerView 的 LayoutManager
+    recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+    // 初始化 Adapter，初始为空列表
+    newsAdapter = new NewsAdapter(new ArrayList<>());
+    recyclerView.setAdapter(newsAdapter);
+    recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
+
+    // 返回视图
+    return view;
+}
+```
+
+
+
+注册上下拉监听器：
+
+==注意，监听器只需要注册一次，也就是注册监听器的方法执行一次之后监听器就生效了，之后监听到事件就都会执行里面的代码，但是如果一次都没有被执行，则不会生效==
+
+```java
+private void initRefreshLayout() {
+    RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+
+    // 下拉刷新
+    refreshLayout.setOnRefreshListener(refreshlayout -> {
+        newsCache.remove(title); // 移除缓存
+        loadNewsData(true); // 加载第一页
+    });
+
+    // 上拉加载更多
+    refreshLayout.setOnLoadMoreListener(refreshlayout -> {
+        // 加载下一页
+        loadMoreNewsData();
+    });
+}
+```
+
+
+
+在onViewCreate中注册监听器和初始化页面
+
+```java
+@Override
+public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+
+    // 初始化 SmartRefreshLayout
+    initRefreshLayout();
+
+    // 首次加载数据（无缓存时）
+    loadNewsData(true);
+}
+```
 
 
 
