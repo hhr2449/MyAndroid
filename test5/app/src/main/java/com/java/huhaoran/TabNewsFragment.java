@@ -46,8 +46,6 @@ public class TabNewsFragment extends Fragment {
     //记录最新日期（因为垃圾的后端接口，所以获取的新闻最新日期不一定是当天）
     private String newDay = null;
 
-    //每张页面的条数
-    private static final int PAGE_SIZE = 10;
 
     //是否正在加载
     //防止在开新的线程获取数据的时候又请求新的数据，

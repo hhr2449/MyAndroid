@@ -1,10 +1,10 @@
 package com.java.huhaoran;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.google.android.material.navigation.NavigationView;
 
@@ -18,8 +18,9 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-import com.java.huhaoran.R;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,10 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tablayout;
     private ViewPager2 viewpager;
     //这是新闻主题的数组，用来创建TabLayout的标签
-    private String[] titles = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
+    public static List<String> titles = new ArrayList<String>();
+    public static List<String> titlesNoUse = new ArrayList<String>();
+
+    private String[] categories = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
 
     //newsCache用于缓存新闻数据，避免重复请求
     public static Map<String, List<FetchNews.NewsItem>> newsCache = new HashMap<>();
@@ -38,15 +42,27 @@ public class MainActivity extends AppCompatActivity {
     public static Map<String, Integer> currentPage = new HashMap<>();
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        titles = new ArrayList<>(Arrays.asList(categories));
+
+        //初始化标列表
+        TabPreference tabPreference = new TabPreference(this);
+        titles = tabPreference.loadTitles();
+        titlesNoUse = tabPreference.loadTitlesNoUse();
+
+
+//----------------------注册主菜单点击事件-------------------------//
         ImageView menu = findViewById(R.id.menu);
         menu.setOnClickListener(v -> {
             DrawerLayout drawer = findViewById(R.id.drawer_layout);
             drawer.openDrawer(GravityCompat.START);
         });
+//----------------------注册主菜单点击事件-------------------------//
 
 //----------------------实现抽屉栏的返回键-------------------------//
         //注意这个图标是属于 NavigationView中的头部栏的，所以不能直接获取
@@ -60,6 +76,15 @@ public class MainActivity extends AppCompatActivity {
             drawer.closeDrawer(GravityCompat.START);
         });
 //----------------------实现抽屉栏的返回键-------------------------//
+
+//----------------------注册tab栏管理键的点击事件-------------------------//
+        ImageView tab_manager = findViewById(R.id.tab_manager);
+        tab_manager.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TabsManager.class);
+            startActivity(intent);
+        });
+
+//----------------------实注册tab栏管理键的点击事件-------------------------//
 
 
 //----------------------实现主题栏-----------------------------------------------
@@ -79,14 +104,14 @@ public class MainActivity extends AppCompatActivity {
             //这个方法，根据位置返回一个Fragment对象
             public Fragment createFragment(int position) {
                 //使用newInstance()方法创建一个Fragment对象，传入的主题参数使用titles[position]获取
-                return TabNewsFragment.newInstance(titles[position]);
+                return TabNewsFragment.newInstance(titles.get(position));
             }
 
             @Override
             //告诉ViewPager一共有多少个页面
             public int getItemCount() {
                 //总的页面数就是标题的个数
-                return titles.length;
+                return titles.size();
             }
         });
 
@@ -96,8 +121,9 @@ public class MainActivity extends AppCompatActivity {
         tablayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                //设置viewPager选中当前页
+                //设置TabLayout的选中事件
                 //tab.getPosition()获取当前选中的tab的索引
+                //setCurrentItem()方法可以实现跳转到ViewPager的某个页面
                 viewpager.setCurrentItem(tab.getPosition(),false);
             }
 
@@ -116,13 +142,16 @@ public class MainActivity extends AppCompatActivity {
         TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
             @Override
             public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                tab.setText(titles[position]);
+                tab.setText(titles.get(position));
             }
         });
 
         //启用绑定
         tabLayoutMediator.attach();
 //----------------------实现主题栏-----------------------------------------------
+
+
+
 
 
 

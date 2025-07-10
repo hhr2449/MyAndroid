@@ -935,6 +935,165 @@ adapter.notifyItemRangeInserted(5, 3);
 
 3. onViewCreated(): onViewCreated()方法是在onCreateView()方法完成后被调用的。在onViewCreated()方法中，你可以对Fragment的视图进行初始化、设置监听器、绑定数据等操作。你可以使用view.findViewById()方法获取到视图中的控件，并对其进行操作。这个方法可以访问到Fragment的视图，并允许你对其进行进一步的操作。在onViewCreated()方法中，你可以安全地操作Fragment的视图，包括设置监听器、绑定数据、处理用户交互等操作。
 
+
+
+## setCurrentItem
+
+```java
+viewpager.setCurrentItem(position, false/true)
+```
+
+该方法用于设置一个ViewPager跳转到第position个页面，后面的false/true用于指定是否启用滑动的特效
+
+比如想要实现tabLayout和viewPager的联动：
+
+```java
+//tablayout点击事件
+tablayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+    @Override
+    public void onTabSelected(TabLayout.Tab tab) {
+        //设置TabLayout的选中事件
+        //tab.getPosition()获取当前选中的tab的索引
+        //setCurrentItem()方法可以实现跳转到ViewPager的某个页面
+        viewpager.setCurrentItem(tab.getPosition(),false);
+    }
+
+    @Override
+    public void onTabUnselected(TabLayout.Tab tab) {
+
+    }
+
+    @Override
+    public void onTabReselected(TabLayout.Tab tab) {
+
+    }
+});
+
+//viewPager和tab_layout关联在一起
+TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
+    @Override
+    public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+        tab.setText(titles[position]);
+    }
+});
+
+//启用绑定
+tabLayoutMediator.attach();
+```
+
+需要两个部分，第一部分设置tab的点击监听器，里面就是用setCurrentItem用于实现ViewPager的跳转，可以根据tab的点击跳转到对应的页面，后面再将两者绑定在一起，实现ViewPager的滑动对TabLayout的联动
+
+|                   功能                   | `TabLayout.OnTabSelectedListener` | `TabLayoutMediator` |
+| :--------------------------------------: | :-------------------------------: | :-----------------: |
+|     **点击 `Tab` 切换 `ViewPager`**      |              ✅ 支持               |       ✅ 支持        |
+| **滑动 `ViewPager` 更新 `Tab` 选中状态** |             ❌ 不支持              |       ✅ 支持        |
+|      **自动设置 `Tab` 的文字/图标**      |             ❌ 不支持              |       ✅ 支持        |
+
+
+
+## 使用Intent传递信息
+
+在一个activity中，可以定义一个Intent类对象，并且指定目标页面，使用putExtra指定Intent携带的信息（以键值对的形式），然后使用startActivity(intent);将intent发送过去，在对应页面可以使用geiIntent()来获取Intent从而得到信息
+
+```Java
+Intent intent = new Intent(this, MainActivity.class);
+intent.putExtra("targetPage", 3);
+startActivity(intent);
+finish();
+```
+
+```Java
+int targetPage = getIntent().getIntExtra("targetPage",0);
+viewpager.setCurrentItem(targetPage);
+```
+
+
+
+## Adapter初步
+
+
+
+**MCV架构**：
+
+![img](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/11147289.jpg)
+
+Model:数据模型，负责程序的核心运算和逻辑判断，会通过view获取用户信息，然后从数据库查询相关信息，然后进行运算，再将结果通过view呈现出来（后端部分）
+
+view:就是图形界面，可以于用户进行交互
+
+Controller:控制器作为View和Model之间的桥梁，可以接受用户操作，然后调用Model层处理数据，将处理结果发给view层绘制界面（一般是通过Adapter），比如Activity.java就是典型的Controller
+
+例如：实现一个计算器程序，用户在View层中点击按钮，然后用户的操作在Controller层中通过点击事件获取到，Controller调用后端的Model(比如说一个Calculator类)，将用户的表达式输入或是进行计算，然后Controller获取后端Model的计算结果，通过Adapter在View层进行显示
+
+Adapter可以看作是View的辅助工具，将前端界面绘制需要的数据作为Adapter的成员变量，利用这些变量在Adapter里面定义绘制的逻辑，等到需要绘制界面的时候只需要构造Adapter的对象，同时将需要的数据传入（构造函数），再将Adapter类的对象和视图对象绑定在一起，这样就可以实现前后端之间的交互
+
+还可以在Adapter中设置相关方法，当后端数据发生变化时可以调用这些方法修改前端界面
+
+
+
+注意，adapter是用于辅助视图创建的，理论上完全可以在Controller中创建视图并且将视图添加进容器中，但是这样不够简便，而且没有复用和懒加载，性能比较差，比如：
+
+```java
+LinearLayout container = findViewById(R.id.news_container);
+
+for (NewsItem item : newsList) {
+    View newsView = LayoutInflater.from(this).inflate(R.layout.item_news, container, false);
+    
+    TextView title = newsView.findViewById(R.id.title);
+    title.setText(item.title);
+
+    container.addView(newsView);
+}
+```
+
+`LayoutInflater.from(this)`创建了一个LayoutInflater类的对象，调用`.inflate(R.layout.item_news, container, false)`表示创建出一个view类型的对象，其中R.layout.item_news是这个view的布局文件，container是要将这个view加入的容器，false代表展示不加入
+
+ container.addView(newsView);将刚刚创建的view加入容器中
+
+
+
+**继承并使用BaseAdapter**:
+
+核心方法：
+
+视图的结构：一般由多个item构成，每个item给予一个编号称为position（这个item在数据列表中的索引，与屏幕上的滑动无关），item的样式可以单独定义xml文件
+
+1. public int getCount(): 适配器中数据集的数据个数；
+
+2. public Object getItem(int position): 获取数据集中与索引对应的数据项（也就是索引为position的哪个item）
+
+3. public long getItemId(int position): 获取第position个item对应的ID；
+
+4. public View getView(int position,View convertView,ViewGroup parent): 
+
+   用于创建第position个item，position就是其索引，convertView是之前使用过但是废弃了（不在屏幕中）的视图，可以进行复用，parent是父容器，因为在创建视图时会用到
+
+工作流程：
+
+1. **获取数据项个数** — `getCount()`
+
+当视图控件（比如`ListView`）准备显示列表时，**会先调用适配器的`getCount()`方法**，以确定列表中总共有多少条数据（即多少个Item需要展示）。
+
+- 这个方法返回的数据个数决定了列表的长度。
+- 视图控件根据这个数字决定滑动范围、显示条目数量等。
+
+2. **创建和显示每个Item视图** — 循环调用`getView(position, convertView, parent)`
+
+然后，视图控件会循环调用`getView()`方法为每一个`position`（从0到`getCount()-1`）创建或者复用对应的列表项视图：
+
+- **传入参数 `position`**：表示当前需要展示的是第几个数据项。
+- **传入参数 `convertView`**：
+  - 这是“回收”的旧视图，用来避免重复创建，提升效率。
+  - 第一次加载时通常是`null`，会创建新视图。
+  - 滑动列表时，旧的、滚动出屏幕的视图会传进来复用。
+- `getView()`负责返回一个“装载了数据”的视图，供视图控件显示。
+
+
+
+复用机制：因为整个页面中的View的形式大部分都是一样的，只是内容不同，当一个item划出屏幕时，它会被废弃掉，而android会将这些已经废弃掉的view传入getView进行复用，所以一般在getView中会先判断convertView是否为空，如果不为空，那么就不用创建视图了，可以直接复用
+
+为了减少调用findViewById的次数，我们一般会创建一个内部类ViewHolder用于保存一个item中所有需要调整内容的控件的引用，然后通过setTag方法将ViewHolder的一个对象绑定在一个View上面，这样下一次复用的时候就不需要再获取View中的item了，可以直接getTag
+
 # 大作业笔记
 
 
@@ -1824,6 +1983,10 @@ BezierRadarHeader，BallPulseFooter分别是上拉和下拉的动画效果
 
 
 
+==TabNewsFragment类是用于创建一个fragment的，一个fragment对应一个TabNewsFragment的对象，这个类对象就相当于是这个fragment的管理者，里面有这个fragment的相关数据，有fragment的三个生命周期方法，用于储存fragment的相关数据和管理它的生命周期==
+
+
+
 新增了
 
 ```java
@@ -2033,10 +2196,21 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
     // 初始化 SmartRefreshLayout
     initRefreshLayout();
 
-    // 首次加载数据（无缓存时）
-    loadNewsData(true);
+        if(newsCache.containsKey(title)) {
+            newsAdapter.updateData(newsCache.get(title));
+        }
+        else {
+            // 首次加载数据（无缓存时）
+            loadNewsData(true);
+        }
 }
 ```
+
+
+
+缓存机制：为了避免切换Tab会导致页面重新加载的问题，我增加了全局的Map newsCache用于存储每个页面的新闻列表
+
+每次刷新或是获取更多都会更新缓存，在onViewCreate中，如果有缓存，则会通过缓存加载页面
 
 
 
