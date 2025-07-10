@@ -2,6 +2,9 @@ package com.java.huhaoran;
 
 import static com.java.huhaoran.MainActivity.newsCache;
 
+import static java.lang.Math.max;
+import static java.lang.StrictMath.random;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -31,11 +34,17 @@ public class TabNewsFragment extends Fragment {
     //我们需要一个参数就是页面的主题
     private static final String ARG_PARAM = "title";
 
-    // TODO: Rename and change types of parameters
+    //!!!注意TabNewsFragment的一个类对象就对应一个fragment，所以可以将页面的数据作为成员变量进行储存
     private String title;
 
     //当前页面的页数
     private int currentPage = 1;
+
+    //记录最新日期的新闻最大页数
+    private int newDayPageLimit = 0;
+
+    //记录最新日期（因为垃圾的后端接口，所以获取的新闻最新日期不一定是当天）
+    private String newDay = null;
 
     //每张页面的条数
     private static final int PAGE_SIZE = 10;
@@ -130,28 +139,24 @@ public class TabNewsFragment extends Fragment {
         if (isLoading) return;
         isLoading = true;
 
-        // 递增页码
-        currentPage++;
 
         // 从网络请求下一页数据
         new Thread(() -> {
             //开线程请求数据
             String title_tmp = title.equals("全部") ? "" : title;
             FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
-            if (response != null && response.data != null) {
-                //如果请求到数据了，则要将数据添加到缓存，并且更新界面
-                // 将新数据追加到缓存
+            // 递增页码
+            currentPage++;
 
-                //在缓存Map中找到对应标题的缓存
-                List<FetchNews.NewsItem> cachedData = newsCache.get(title);
-                if (cachedData != null) {
-                    // 如果缓存中有数据，则将新的数据追加到对应标题的缓存List中，然后将List放入
-                    cachedData.addAll(response.data);
-                    newsCache.put(title, cachedData);
-                } else {
-                    // 如果缓存中没有数据（理论上不应该发生，因为首次加载已经缓存），就直接将新获取的数据加入
-                    newsCache.put(title, response.data);
+
+            if (response != null && response.data != null&& !response.data.isEmpty()) {
+                String time[] = response.data.get(0).publishTime.split(" ");
+                if(newDay != null &&newDay.equals(time[0])) {
+                    newDayPageLimit = max(newDayPageLimit, currentPage);
                 }
+
+
+                //添加数据直接调用appendData就可以了，不需要额外进行数据添加
 
                 //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
                 requireActivity().runOnUiThread(() -> {
@@ -163,8 +168,10 @@ public class TabNewsFragment extends Fragment {
                 });
             } else {
                 requireActivity().runOnUiThread(() -> {
-                    RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
-                    refreshLayout.finishLoadMore(false); // 加载失败
+                    if (getView() != null) {
+                        RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
+                        refreshLayout.finishLoadMore(false); // 加载失败
+                    }
                     isLoading = false; // 允许下次加载
                 });
             }
@@ -173,17 +180,37 @@ public class TabNewsFragment extends Fragment {
 
 
     //刷新数据
+    //更新了刷新逻辑，如果每次刷新都回到第一页的话显得重复，效果不好
+    //所以我记录了有当前日期新闻的界面，如果刷新时的page是当天的新闻，则获取下一页
+    //如果不是，则回到有当前日期新闻的随机一页
 
     private void loadNewsData(boolean isRefresh) {
-        currentPage++;
 
         new Thread(() -> {
             String title_tmp = title.equals("全部") ? "" : title;
             FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
-            if (response != null && response.data != null) {
+
+
+            if (response != null && response.data != null&& !response.data.isEmpty()) {
+
+                String time[] = response.data.get(0).publishTime.split(" ");
+                if(currentPage == 1) {
+                    newDay = time[0];
+                }
+
+
+                if(newDay != null && newDay.equals(time[0])) {
+                    newDayPageLimit = max(currentPage, newDayPageLimit);
+                } else {
+                    currentPage = (int)(Math.random()*newDayPageLimit+1);
+                    response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+                }
+                currentPage++;
+                List<FetchNews.NewsItem> newslist = response.data;
+
                 newsCache.put(title, response.data); // 缓存数据
                 requireActivity().runOnUiThread(() -> {
-                    newsAdapter.updateData(response.data); // 更新适配器数据
+                    newsAdapter.updateData(newslist); // 更新适配器数据
                     RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
                     refreshLayout.finishRefresh(); // 结束刷新动画
                 });
