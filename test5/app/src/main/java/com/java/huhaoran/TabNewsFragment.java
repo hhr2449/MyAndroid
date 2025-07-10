@@ -156,7 +156,12 @@ public class TabNewsFragment extends Fragment {
                 }
 
 
-                //添加数据直接调用appendData就可以了，不需要额外进行数据添加
+                //缓存数据
+                // 确保 newsCache 中有该 title 的列表
+                if (!newsCache.containsKey(title)) {
+                    newsCache.put(title, new ArrayList<>());
+                }
+                newsCache.get(title).addAll(response.data);
 
                 //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
                 requireActivity().runOnUiThread(() -> {
@@ -185,6 +190,9 @@ public class TabNewsFragment extends Fragment {
     //如果不是，则回到有当前日期新闻的随机一页
 
     private void loadNewsData(boolean isRefresh) {
+        // 防止重复加载
+        if (isLoading) return;
+        isLoading = true;
 
         new Thread(() -> {
             String title_tmp = title.equals("全部") ? "" : title;
@@ -214,6 +222,7 @@ public class TabNewsFragment extends Fragment {
                     RefreshLayout refreshLayout = getView().findViewById(R.id.refreshLayout);
                     refreshLayout.finishRefresh(); // 结束刷新动画
                 });
+                isLoading = false;
             } else {
                 requireActivity().runOnUiThread(() -> {
                     if (isRefresh) {
@@ -221,6 +230,7 @@ public class TabNewsFragment extends Fragment {
                         refreshLayout.finishRefresh(false); // 刷新失败
                     }
                 });
+                isLoading = false;
             }
         }).start();
     }
@@ -272,7 +282,13 @@ public class TabNewsFragment extends Fragment {
         // 初始化 SmartRefreshLayout
         initRefreshLayout();
 
-        // 首次加载数据（无缓存时）
-        loadNewsData(true);
+        if(newsCache.containsKey(title)) {
+            newsAdapter.updateData(newsCache.get(title));
+        }
+        else {
+            // 首次加载数据（无缓存时）
+            loadNewsData(true);
+        }
+
     }
 }

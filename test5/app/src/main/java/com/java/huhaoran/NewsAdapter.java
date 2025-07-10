@@ -155,7 +155,8 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
 
     //方便刷新数据
     public void updateData(List<FetchNews.NewsItem> newData) {
-        this.newslist = newData;          // 直接替换整个数据集
+        this.newslist.clear();
+        this.newslist.addAll(newData);
         notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
     }
 }
