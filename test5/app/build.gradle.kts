@@ -16,6 +16,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -34,7 +36,18 @@ android {
     }
     packaging {
         resources.excludes.add("META-INF/DEPENDENCIES")
+        resources.excludes.add("META-INF/LICENSE")
+        resources.excludes.add("META-INF/LICENSE.txt")
+        resources.excludes.add("META-INF/NOTICE")
+        resources.excludes.add("META-INF/NOTICE.txt")
+        resources.excludes.add("META-INF/ASL2.0")
+        resources.excludes.add("META-INF/INDEX.LIST")
+        resources.excludes.add("META-INF/*.kotlin_module")
+        resources.excludes.add("META-INF/*.version")
+
     }
+
+
 }
 
 dependencies {
@@ -61,5 +74,7 @@ dependencies {
     implementation(libs.exoplayer)
     implementation(libs.exoplayerui)
     implementation(libs.glm)
+    annotationProcessor(libs.roomcompiler)
+    implementation(libs.roomruntime)
 
 }

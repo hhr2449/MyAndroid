@@ -21,8 +21,9 @@ activity = "1.10.1"
 photoview = "2.3.0"
 exoplayer = "1.3.1"
 exoplayerui = "1.3.1"
-glidem = "4.12.0"
 glm = "release-V4-2.0.2"
+room-runtime = "2.5.2"
+room-compiler = "2.5.2"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -47,7 +48,8 @@ photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photovi
 exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "exoplayer"}
 exoplayerui = { module = "androidx.media3:media3-ui", version.ref = "exoplayerui"}
 glm = { group = "cn.bigmodel.openapi", name = "oapi-java-sdk", version.ref = "glm" }
-
+roomruntime = {module = "androidx.room:room-runtime", version.ref = "room-runtime"}
+roomcompiler = {module = "androidx.room:room-compiler", version.ref = "room-compiler"}
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 

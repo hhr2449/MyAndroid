@@ -2562,17 +2562,6 @@ adapter之间的交互：可以分别设置并且使用接口，在activity中�
 
 
 
-### 调用glm的API
-
-#### 导入相关依赖
-
-1. ```
-   glm = { group = "cn.bigmodel.openapi", name = "oapi-java-sdk", version.ref = "glm" }
-   glm = "release-V4-2.0.2"
-   ```
-
-2. 
-
 
 
 ### 新闻栏的详情界面
@@ -2720,6 +2709,473 @@ else {
 ```
 
 
+
+
+
+#### 调用glm的API
+
+##### 导入相关依赖
+
+1. ```java
+   glm = { group = "cn.bigmodel.openapi", name = "oapi-java-sdk", version.ref = "glm" }
+   glm = "release-V4-2.0.2"
+   //这是glm的相关依赖
+   ```
+
+2. ```java
+   okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version = "4.12.0" }
+   gson = { group = "com.google.code.gson", name = "gson", version = "2.10.1" }
+   //使用okhttp和gson进行网络请求和json解析，注意助教的demo使用了hutool，这个在android里不能用
+   ```
+
+3. 设置网络
+
+   在manifest.xml中：
+
+   ![image-20250712162318674](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/image-20250712162318674.png)
+
+   网络配置文件（xml/network_security_config.xml）：
+
+   ```java
+   <?xml version="1.0" encoding="utf-8"?>
+   <network-security-config>
+       <base-config cleartextTrafficPermitted="true" />
+   </network-security-config>
+   ```
+
+##### 调用api
+
+**示例代码**：
+
+```java
+private static String testInvoke() {
+    OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build();
+
+    JsonObject json = new JsonObject();
+    json.addProperty("model", "glm-4-plus");  // 这里用更强的模型，可以根据需要换
+
+    JsonArray messages = new JsonArray();
+
+    // 用户告诉模型任务
+    JsonObject systemMessage = new JsonObject();
+    systemMessage.addProperty("role", "user");
+    systemMessage.addProperty("content", "请帮我总结以下新闻内容，提炼重点和关键信息");
+    messages.add(systemMessage);
+
+    // 新闻内容，换成你真实新闻文本
+    JsonObject newsMessage = new JsonObject();
+    newsMessage.addProperty("role", "user");
+    newsMessage.addProperty("content", "【新闻标题】：全球气候变化峰会召开\n" +
+            "【新闻内容】：全球各国领导人近日齐聚一堂，讨论应对气候变化的紧迫措施。专家指出，气候变暖带来的极端天气频发，严重影响农业生产和人类生活。会议强调加速清洁能源发展和碳排放减少的必要性。各国承诺将在未来十年内大幅提升环保投入，共同守护地球家园。");
+    messages.add(newsMessage);
+
+    // 明确让模型总结的提示
+    JsonObject promptMessage = new JsonObject();
+    promptMessage.addProperty("role", "user");
+    promptMessage.addProperty("content", "请用简洁的语言总结这条新闻，突出关键信息和意义。");
+    messages.add(promptMessage);
+
+    json.add("messages", messages);
+
+    String jsonBody = json.toString();
+
+    RequestBody body = RequestBody.create(jsonBody, MediaType.parse("application/json"));
+    Request request = new Request.Builder()
+            .url("https://open.bigmodel.cn/api/paas/v4/chat/completions")
+            .addHeader("Authorization", "Bearer " + API_KEY)
+            .addHeader("Content-Type", "application/json")
+            .post(body)
+            .build();
+
+    try (Response response = client.newCall(request).execute()) {
+        if (response.isSuccessful()) {
+            return response.body().string();
+        } else {
+            return "Error: " + response.code() + " " + response.message();
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+        return "Exception: " + e.getMessage();
+    }
+}
+```
+
+关键对象：
+
+1. OkHttpClient client用来发送网络请求
+2. Request request要发送的请求
+3. JsonObject json = new JsonObject();一个Json对象，用来构建请求的内容
+4. Response response返回的内容
+
+glm的api可以接受一段json格式的请求，返回的也是一段json字符串，使用时，应该构造一个json类型的对象，在上面附加上请求的相关参数，然后用它来构建请求，再发送出去
+
+常用参数
+
+| 参数名称        | 类型           | 必填 | 参数描述                                                     |
+| :-------------- | :------------- | :--- | :----------------------------------------------------------- |
+| model           | String         | 是   | 要调用的模型编码。                                           |
+| messages        | List<Object>   | 是   | 调用语言模型时，当前对话消息列表作为模型的提示输入，以JSON数组形式提供，例如{"role": "user", "content": "Hello"}。可能的消息类型包括系统消息、用户消息、助手消息和工具消息。 |
+| request_id      | String         | 否   | 由用户端传递，需要唯一；用于区分每次请求的唯一标识符。如果用户端未提供，平台将默认生成。 |
+| do_sample       | Boolean        | 否   | 当do_sample为true时，启用采样策略；当do_sample为false时，温度和top_p等采样策略参数将不生效，模型输出随机性会大幅度降低。默认值为true。 |
+| stream          | Boolean        | 否   | 该参数在使用同步调用时应设置为false或省略。表示模型在生成所有内容后一次性返回所有内容。默认值为false。如果设置为true，模型将通过标准Event Stream逐块返回生成的内容。当Event Stream结束时，将返回一个data: [DONE]消息。 |
+| temperature     | Float          | 否   | 采样温度，控制输出的随机性，必须为正数 取值范围是：[0.0,1.0]， 默认值为 0.75，值越大，会使输出更随机，更具创造性；值越小，输出会更加稳定或确定 建议您根据应用场景调整 top_p 或 temperature 参数，但不要同时调整两个参数 |
+| top_p           | Float          | 否   | 用温度取样的另一种方法，称为核取样 取值范围是：[0.0, 1.0]，默认值为 0.90 模型考虑具有 top_p 概率质量 tokens 的结果 例如：0.10 意味着模型解码器只考虑从前 10% 的概率的候选集中取 tokens 建议您根据应用场景调整 top_p 或 temperature 参数，但不要同时调整两个参数 |
+| max_tokens      | Integer        | 否   | 控制生成的响应的最大 tokens 数量, 模型支持的最大max_tokens请参考[模型概览。](https://www.bigmodel.cn/dev/howuse/model) |
+| response_format | Object         | 否   | 指定模型输出格式，默认为 text, { "type": "text" }：文本输出模式，模型返回普通的文本输出。 { "type": "json_object" }：JSON输出模式，模型返回有效的 JSON 输出。 Beta 版本采用工程实现方式，实现细节请参考[说明文档](https://www.bigmodel.cn/dev/guidelines/JsonFormat) 。 |
+| stop            | List           | 否   | 模型遇到stop指定的字符时会停止生成。目前仅支持单个stop词，格式为["stop_word1"]。 |
+| tools           | List           | 否   | 模型可以调用的工具。                                         |
+| type            | String         | 否   | 工具列表：包括函数调用、知识库检索和网络搜索。参数配置请参考**Tools格式**。 |
+| tool_choice     | String或Object | 否   | 用于控制模型选择调用哪个函数的方式，仅在工具类型为function时补充。默认auto，目前仅支持auto。 |
+| user_id         | String         | 否   | 终端用户的唯一ID，帮助平台对终端用户的非法活动、生成非法不当信息或其他滥用行为进行干预。ID长度要求：至少6个字符，最多128个字符。 |
+
+最后使用这样的一个类提取content
+
+```java
+class ChatResponse {
+    Choice [] choices;
+    class Choice {
+        Message message;
+    }
+
+    class Message {
+        String content;
+    }
+}
+```
+
+
+
+注意要在gradle里将sdk最低版本降到26
+
+glm的依赖似乎有问题
+
+![image-20250712172950844](https://raw.githubusercontent.com/hhr2449/pictureBed/main/img/image-20250712172950844.png)
+
+##### 生成新闻总结
+
+```java
+package com.java.huhaoran;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import java.io.IOException;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+public class SummarizeByGLM {
+    private static final String API_KEY = "7e9dbe5b59904cc396ae3dc9c3a17202.bRiYAY52gnozmJ09";
+
+    public static String summarize(String newsTitle, String newsContent) {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .build();
+
+
+        //构建请求体
+        JsonObject requestBody = new JsonObject();
+
+        //加上模型信息
+        requestBody.addProperty("model", "glm-4");
+
+        //任务信息用一个列表储存
+        JsonArray messages = new JsonArray();
+
+        //添加任务目标
+        JsonObject systemJson = new JsonObject();
+        systemJson.addProperty("role", "user");
+        systemJson.addProperty("system", "你是一个新闻摘要助手，请总结新闻重点");
+        messages.add(systemJson);
+
+        //添加新闻内容
+        JsonObject newsMessage = new JsonObject();
+        newsMessage.addProperty("role", "user");
+        String content = "以下是**新闻内容**：\n  **【新闻标题】**：" + newsTitle +
+                "\n  **【新闻内容】**：" + newsContent;
+        newsMessage.addProperty("content", content);
+        messages.add(newsMessage);
+
+        //再次明确任务
+        JsonObject promptMessage = new JsonObject();
+        promptMessage.addProperty("role", "user");
+        promptMessage.addProperty("content", "请用简洁的语言总结这条新闻，突出关键信息和意义，要求总结的内容以“【新闻简报】：”开头");
+        messages.add(promptMessage);
+
+        //将信息加入
+        requestBody.add("messages", messages);
+        //得到请求体的字符串
+        String jsonBody = requestBody.toString();
+        //构建请求
+        RequestBody body = RequestBody.create(jsonBody, MediaType.parse("application/json"));
+        Request request = new Request.Builder()
+                .url("https://open.bigmodel.cn/api/paas/v4/chat/completions")
+                .addHeader("Authorization", "Bearer " + API_KEY)
+                .addHeader("Content-Type", "application/json")
+                .post(body)
+                .build();
+
+        //返回请求的结果
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                return response.body().string();
+            } else {
+                return "Error: " + response.code() + " " + response.message();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Exception: " + e.getMessage();
+        }
+
+
+    }
+}
+```
+
+建一个类用来获取ai的返回数据
+
+```java
+//加入ai总结
+
+//加入总结储存功能
+SharedPreferences spref = getSharedPreferences("news_summaries", MODE_PRIVATE);
+String newsKey = "summary_" + titleText;
+String cacheSummary = spref.getString(newsKey, "");
+//如果有储存，直接显示
+if(cacheSummary != null && cacheSummary != "") {
+    summary_content.setText(cacheSummary);
+}
+//没有总结过，调用
+else {
+    //注意网络请求必须放在一个单独的线程里
+    new Thread(() -> {
+        String summary = SummarizeByGLM.summarize(titleText, contentText);
+        Gson gson = new Gson();
+        try {
+            ChatResponse chatResponse = gson.fromJson(summary, ChatResponse.class);
+            if(chatResponse.choices == null || chatResponse.choices.length == 0) {
+                return;
+            }
+            String summaryText = chatResponse.choices[0].message.content;
+            // 回到主线程更新UI
+            runOnUiThread(() -> {
+                summary_content.setText(summaryText);
+            });
+            //储存新闻总结
+            SharedPreferences.Editor editor = spref.edit();
+            editor.putString(newsKey, summaryText);
+            editor.apply();
+        } catch (Exception e) {
+            e.printStackTrace();
+            runOnUiThread(() -> {
+                summary_content.setText("AI 总结失败，请稍后再试");
+            });
+        }
+    }).start();
+}
+```
+
+在详情页中获取数据并且解析，然后使用一个TextView来呈现
+
+使用了SharedPreference来储存ai总结，如果已经有了就不在生成新的，直接使用，如果没有就生成并储存
+
+
+
+**但是SharedPreference只适合存储少量的数据，当数据多了会出现问题，考虑改造成数据库**
+
+##### room数据库
+
+包含3个部分（对应java类）
+
+1. **Entity**:
+
+   这个是数据模型，定义数据库的表结构
+
+   
+   ```java
+   @Entity(tableName = "notes")
+   public class Note {
+   
+   @PrimaryKey(autoGenerate = true)
+   private int id;
+       
+   @ColumnInfo(name = "note_title")
+   private String title;
+   
+   @ColumnInfo(name = "note_content")
+   private String content;
+   
+   // 必须的构造函数（Room使用）
+   public Note(String title, String content) {
+       this.title = title;
+       this.content = content;
+   }
+   
+   // Getter和Setter（Room需要通过它们访问私有字段）
+   public int getId() { return id; }
+   public void setId(int id) { this.id = id; }
+   // 其他getter/setter...
+   }
+   ```
+   一个Entity类相当于一张表，tableName相当于表名，列中的成员变量相当于表的一列，一个类对象相当于表的一行，主键（使用PrimaryKey表示的）则是唯一标示每一行数据的列，不允许重复或者空
+
+2. **DAO（data access object）**:
+
+   是room中定义了访问数据库操作的接口
+
+   
+   ```java
+   @Dao
+   public interface NoteDao {
+   // 插入（返回插入行的ID）
+   @Insert
+   long insert(Note note);
+       
+   // 批量插入
+   @Insert
+   void insertAll(Note... notes);
+   
+   // 更新
+   @Update
+   void update(Note note);
+   
+   // 删除
+   @Delete
+   void delete(Note note);
+   
+   // 查询所有笔记（按ID降序）
+   @Query("SELECT * FROM notes ORDER BY id DESC")
+   List<Note> getAllNotes();
+   
+   // 带参数的查询
+   @Query("SELECT * FROM notes WHERE id = :noteId")
+   Note getNoteById(int noteId);
+   
+   // 复杂查询示例
+   @Query("SELECT * FROM notes WHERE title LIKE :keyword OR content LIKE :keyword")
+   List<Note> searchNotes(String keyword);
+   }
+   ```
+
+3. **Database**:
+
+   顶层入口类，用于整合数据库中所有组件
+
+   ```java
+   //用于标记Database
+   //entities用于声明数据库中的实体类（包含的表）
+   @Database(entities = {Note.class, User.class}, version = 2)
+   public abstract class AppDatabase extends RoomDatabase {
+       //用于获取实体类对应的Dao接口对象的抽象方法，编译时会自动补全
+       public abstract NoteDao noteDao();
+       public abstract UserDao userDao();
+       
+       //使用单例模式，只有唯一的实例INSTANCE
+       private static volatile AppDatabase INSTANCE;
+       
+       // 预填充数据的回调
+       private static final RoomDatabase.Callback roomCallback = 
+           new RoomDatabase.Callback() {
+               @Override
+               public void onCreate(@NonNull SupportSQLiteDatabase db) {
+                   super.onCreate(db);
+                   // 在新线程中初始化数据
+                   Executors.newSingleThreadExecutor().execute(() -> {
+                       getInstance(context).noteDao()
+                           .insertAll(DEFAULT_NOTES);
+                   });
+               }
+           };
+       
+       //使用getInstance方法获取数据库类的对象
+       //保证单例，需要判断是否有实例，如果有，直接返回，没有才创建
+       public static AppDatabase getInstance(Context context) {
+           if (INSTANCE == null) {
+               synchronized (AppDatabase.class) {
+                   if (INSTANCE == null) {
+                       INSTANCE = Room.databaseBuilder(
+                               context.getApplicationContext(),
+                               AppDatabase.class,
+                               "app_database.db"
+                       )
+                       .addCallback(roomCallback)
+                       .addMigrations(MIGRATION_1_2)
+                       .build();
+                   }
+               }
+           }
+           return INSTANCE;
+       }
+       
+       // 数据库迁移方案（从版本1到版本2）
+       static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+           @Override
+           public void migrate(SupportSQLiteDatabase database) {
+               // 添加新表
+               database.execSQL(
+                   "CREATE TABLE users (" +
+                   "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                   "name TEXT NOT NULL)"
+               );
+               // 修改现有表
+               database.execSQL(
+                   "ALTER TABLE notes ADD COLUMN author_id INTEGER"
+               );
+           }
+       };
+   }
+   ```
+
+==DAO接口不需要我们自己实现，只需要打上注解，并且按照对应的格式来定义方法，编译器就会自动帮我们实现一个实现了DAO接口的类，我们只需要使用Database中的方法获取对象即可==
+
+==在Database中注册了的实体类，当创建其对象时，会自动加入到数据库中==
+
+
+
+使用实例：
+
+```java
+// 获取数据库实例
+AppDatabase db = AppDatabase.getInstance(getApplicationContext());
+
+// 获取DAO
+NoteDao noteDao = db.noteDao();
+UserDao userDao = db.userDao();
+
+// 插入用户
+User user = new User("张三");
+long userId = userDao.insert(user);
+
+// 插入关联笔记
+Note note = new Note("标题", "内容");
+note.setAuthorId(userId);
+noteDao.insert(note);
+
+// 查询所有笔记及其作者
+List<NoteWithUser> notes = noteDao.getNotesWithUsers();
+```
+
+
+
+注意事项：
+
+1. 导入依赖应该这样:
+
+   ```xml
+   annotationProcessor(libs.roomcompiler)
+   implementation(libs.roomruntime)
+   ```
+
+2. 插入时，如果主键已经存在会报错，可以设置`@Insert(onConflict = OnConflictStrategy.REPLACE)`代表如果冲突则替换
 
 ### bug
 
