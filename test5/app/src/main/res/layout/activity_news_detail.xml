@@ -110,6 +110,69 @@
                 app:use_controller="true" />
 
 
+            <!-- AI 摘要标题 -->
+            <TextView
+                android:id="@+id/summary_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AI 总结"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- AI 摘要内容 -->
+            <TextView
+                android:id="@+id/summary_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AI 正在分析本文内容……"
+                android:textSize="15sp"
+                android:textColor="#444444"
+                android:lineSpacingMultiplier="1.4"
+                android:background="#F5F5F5"
+                android:padding="12dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="visible" />
+            <!-- 模型名称标签，右下角 -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true"
+                android:paddingEnd="8dp">
+
+                <LinearLayout
+                    android:id="@+id/model_info_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentBottom="true"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/btn_reload_summary"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/reload"
+                        android:contentDescription="重新加载"
+                        android:layout_marginEnd="4dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="#999999"/>
+
+                    <TextView
+                        android:id="@+id/model_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="来自模型：GLM-4"
+                        android:textSize="12sp"
+                        android:textColor="#999999"/>
+                </LinearLayout>
+            </RelativeLayout>
 
             <!-- 正文内容 -->
             <TextView

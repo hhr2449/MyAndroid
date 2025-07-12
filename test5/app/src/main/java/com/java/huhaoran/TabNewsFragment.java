@@ -194,7 +194,7 @@ public class TabNewsFragment extends Fragment {
 
         new Thread(() -> {
             String title_tmp = title.equals("全部") ? "" : title;
-            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{"智慧之光如何闪耀海洋"}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
 
 
             if (response != null && response.data != null&& !response.data.isEmpty()) {

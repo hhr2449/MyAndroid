@@ -1580,6 +1580,8 @@ gson库用于解析json
 
 还要加上这个：<uses-permission android:name="android.permission.INTERNET" />
 
+有时还要加上这个`android:usesCleartextTraffic="true"`允许明文访问，否则无法使用http
+
 
 
 ##### 重要！！！
@@ -2560,6 +2562,19 @@ adapter之间的交互：可以分别设置并且使用接口，在activity中�
 
 
 
+### 调用glm的API
+
+#### 导入相关依赖
+
+1. ```
+   glm = { group = "cn.bigmodel.openapi", name = "oapi-java-sdk", version.ref = "glm" }
+   glm = "release-V4-2.0.2"
+   ```
+
+2. 
+
+
+
 ### 新闻栏的详情界面
 
 详情页面：总体是一个RelativeLayout，左上方有退出键，下方有点赞，收藏等图标栏。新闻内容区是一个ScollView布局,可以进行滑动，里面嵌套一个线性布局，用于展示新闻信息。还有一个图片展示栏
@@ -2683,7 +2698,26 @@ dependencyResolutionManagement {
 }
 ```
 
+**视频播放**
 
+原本使用videoView，但是没能成功播放，转而使用exoplayer
+
+```java
+//如果有视频
+if (video != null && !video.trim().isEmpty()) {
+    playerview.setVisibility(View.VISIBLE);
+
+    player = new ExoPlayer.Builder(this).build();
+    playerview.setPlayer(player);
+
+    MediaItem mediaItem = MediaItem.fromUri(video);
+    player.setMediaItem(mediaItem);
+    player.prepare();
+}
+else {
+    playerview.setVisibility(View.GONE);
+}
+```
 
 
 

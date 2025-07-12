@@ -1,6 +1,7 @@
 package com.java.huhaoran;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.MediaController;
@@ -25,6 +27,7 @@ import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 
 import com.bumptech.glide.Glide;
+import com.google.gson.Gson;
 import com.java.huhaoran.R;
 
 public class NewsDetailActivity extends AppCompatActivity {
@@ -46,6 +49,8 @@ public class NewsDetailActivity extends AppCompatActivity {
         CardView imageCard = findViewById(R.id.image_card);
         LinearLayout imageContainer = findViewById(R.id.image_container);
         PlayerView playerview = findViewById(R.id.player_view);
+        TextView summary_content = findViewById(R.id.summary_content);
+        ImageView reload = findViewById(R.id.btn_reload_summary);
         //从主界面获取新闻信息
         String titleText = getIntent().getStringExtra("title");
         String publishTimeText = getIntent().getStringExtra("publishTime");
@@ -117,6 +122,76 @@ public class NewsDetailActivity extends AppCompatActivity {
             playerview.setVisibility(View.GONE);
         }
 
+        //加入ai总结
+
+        //加入总结储存功能
+        SharedPreferences spref = getSharedPreferences("news_summaries", MODE_PRIVATE);
+        String newsKey = "summary_" + titleText;
+        String cacheSummary = spref.getString(newsKey, "");
+        //如果有储存，直接显示
+        if(cacheSummary != null && cacheSummary != "") {
+            summary_content.setText(cacheSummary);
+        }
+        //没有总结过，调用
+        else {
+            //注意网络请求必须放在一个单独的线程里
+            new Thread(() -> {
+                String summary = SummarizeByGLM.summarize(titleText, contentText);
+                Gson gson = new Gson();
+                try {
+                    ChatResponse chatResponse = gson.fromJson(summary, ChatResponse.class);
+                    if(chatResponse.choices == null || chatResponse.choices.length == 0) {
+                        return;
+                    }
+                    String summaryText = chatResponse.choices[0].message.content;
+                    // 回到主线程更新UI
+                    runOnUiThread(() -> {
+                        summary_content.setText(summaryText);
+                    });
+                    //储存新闻总结
+                    SharedPreferences.Editor editor = spref.edit();
+                    editor.putString(newsKey, summaryText);
+                    editor.apply();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> {
+                        summary_content.setText("AI 总结失败，请稍后再试");
+                    });
+                }
+            }).start();
+        }
+
+        //重新加载总结
+        reload.setOnClickListener(v -> {
+            summary_content.setText("AI 正在分析本文内容……");
+            new Thread(() -> {
+                String summary = SummarizeByGLM.summarize(titleText, contentText);
+                Gson gson = new Gson();
+                try {
+                    ChatResponse chatResponse = gson.fromJson(summary, ChatResponse.class);
+                    if(chatResponse.choices == null || chatResponse.choices.length == 0) {
+                        return;
+                    }
+                    String summaryText = chatResponse.choices[0].message.content;
+                    // 回到主线程更新UI
+                    runOnUiThread(() -> {
+                        summary_content.setText(summaryText);
+                    });
+                    //储存新闻总结
+                    SharedPreferences.Editor editor = spref.edit();
+                    editor.putString(newsKey, summaryText);
+                    editor.apply();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> {
+                        summary_content.setText("AI 总结失败，请稍后再试");
+                    });
+                }
+            }).start();
+        });
+
+
+
 
     }
     @Override
@@ -128,4 +203,15 @@ public class NewsDetailActivity extends AppCompatActivity {
         }
     }
 
+}
+
+class ChatResponse {
+    Choice [] choices;
+    class Choice {
+        Message message;
+    }
+
+    class Message {
+        String content;
+    }
 }
