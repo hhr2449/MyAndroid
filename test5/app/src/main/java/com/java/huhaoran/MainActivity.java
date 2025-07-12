@@ -3,7 +3,6 @@ package com.java.huhaoran;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.GridView;
 import android.widget.ImageView;
 
 import com.google.android.material.navigation.NavigationView;
@@ -27,6 +26,7 @@ import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
+    private final int REQUEST_CODE = 1001;
     private TabLayout tablayout;
     private ViewPager2 viewpager;
     //这是新闻主题的数组，用来创建TabLayout的标签
@@ -80,9 +80,11 @@ public class MainActivity extends AppCompatActivity {
 //----------------------注册tab栏管理键的点击事件-------------------------//
         ImageView tab_manager = findViewById(R.id.tab_manager);
         tab_manager.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, TabsManager.class);
-            startActivity(intent);
+            Intent intent = new Intent(MainActivity.this, TabsManagerActivity.class);
+            //启动界面并且接受返回结果
+            startActivityForResult(intent, REQUEST_CODE);
         });
+
 
 //----------------------实注册tab栏管理键的点击事件-------------------------//
 
@@ -144,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
             public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
                 tab.setText(titles.get(position));
             }
+
         });
 
         //启用绑定
@@ -157,6 +160,52 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        //判断返回码
+        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
+            //获取返回的数据
+            List<String> update_titles = data.getStringArrayListExtra("update_titles");
+            if (update_titles != null) {
+                //更新标题列表
+                MainActivity.titles = update_titles;
+                //再次设置tablayout和viewpager
+                viewpager.setAdapter(new FragmentStateAdapter(this) {
+                    //这里创建了一个匿名的FragmentStateAdapter对象
+                    @NonNull
+                    @Override
+                    //这个方法的返回值是一个Fragment对象，当ViewPager需要显示一个页面的时候就会调用
+                    //这个方法，根据位置返回一个Fragment对象
+                    public Fragment createFragment(int position) {
+                        //使用newInstance()方法创建一个Fragment对象，传入的主题参数使用titles[position]获取
+                        return TabNewsFragment.newInstance(titles.get(position));
+                    }
+
+                    @Override
+                    //告诉ViewPager一共有多少个页面
+                    public int getItemCount() {
+                        //总的页面数就是标题的个数
+                        return titles.size();
+                    }
+                });
+
+            }
+            //viewPager和tab_layout关联在一起
+            TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
+                @Override
+                public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                    tab.setText(titles.get(position));
+                }
+
+            });
+
+            //启用绑定
+            tabLayoutMediator.attach();
+        }
     }
 
 

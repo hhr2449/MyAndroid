@@ -54,6 +54,9 @@ dependencies {
     implementation(libs.kernal)
     implementation(libs.header)
     implementation(libs.footer)
-
+    implementation(libs.photoview)
+    implementation(libs.exoplayer)
+    implementation(libs.exoplayerui)
+    implementation(libs.glidem)
 
 }

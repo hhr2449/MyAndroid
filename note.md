@@ -1,3 +1,5 @@
+
+
 # 1.Android Studio的使用
 
 ## 运行环境
@@ -1093,6 +1095,65 @@ for (NewsItem item : newsList) {
 复用机制：因为整个页面中的View的形式大部分都是一样的，只是内容不同，当一个item划出屏幕时，它会被废弃掉，而android会将这些已经废弃掉的view传入getView进行复用，所以一般在getView中会先判断convertView是否为空，如果不为空，那么就不用创建视图了，可以直接复用
 
 为了减少调用findViewById的次数，我们一般会创建一个内部类ViewHolder用于保存一个item中所有需要调整内容的控件的引用，然后通过setTag方法将ViewHolder的一个对象绑定在一个View上面，这样下一次复用的时候就不需要再获取View中的item了，可以直接getTag
+
+
+
+## SharedPreference
+
+android内置的一种数据持久化存储的方案，用于储存简单的键值对数据，存储在设备本地的一个xml文件中
+
+轻量化，但是容量较小，不能频繁请求，没有加密，所以适合储存一些如用户设置，偏好，登录状态，开关状态等简单的设置数据
+
+
+
+**使用**：
+
+1. 获取对象
+
+   `SharedPreferences sp = getSharedPreferences("user_prefs", Context.MODE_PRIVATE);`使用getSharePreferences方法，如果之前已经有了user_prefs这个文件，那么就会返回这个文件对应的对象，如果没有，会创建文件并且返回对象。
+
+   这个方法是单例模式，只会返回一个对象，避免了并发修改，比构造函数更好
+
+2. 获取数据
+
+   `sp.getType(key, default)`，Type是具体的一个类别，如果有，返回对应的value，如果没有，返回默认值
+
+3. 写入数据
+
+   `SharedPreferences.Editor editor = sp.edit();`获取Editor
+
+   editor.putType(key,value)方法用于放入数据
+
+   最后要用editor.apply()提交
+
+4. 删除数据
+
+   ```java
+   editor.remove("username");  // 删除指定键
+   editor.clear();             // 清空所有数据
+   ```
+
+## 使用Gson来将对象序列化和将对象从json中复原
+
+```java
+Gson gson = new Gson();
+String json = gson.toJson(list);
+System.out.println(json);
+ArrayList<String> fromJson = gson.fromJson(json, ArrayList.class);
+for(String s1 : fromJson) {
+    System.out.println(s1);
+}
+```
+
+使用toJson可以将对象变为json字符串，使用fromJson(json, type.class)可以将对象恢复
+
+SharedPreferment不能储存List，但是可以使用Gson将其化为json字符串进行储存
+
+
+
+## 适配器中数据更改
+
+涉及用户操作更改数据，同时要在界面上显示的情况，一般我们会==在Adapter中设计更改数据的方法==，同时使用notifyDataSetChanged()来进行界面更新
 
 # 大作业笔记
 
@@ -2214,6 +2275,418 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
 
 
 
+### 实现标签栏的增删改查
+
+思路：
+
+维护两个全局的list分别存放已使用的标签和未使用的标签，要关注顺序
+
+使用SharedPreference进行持久化保存
+
+由于SharedPreference无法对list进行保存，所以使用了Gson里的toJson和fromJson两个方法，list转化为json字符串进行储存和读取
+
+创建一个TabsPreference类，封装了两个list的加载和存储操作
+
+主界面启动的时候会对两个list进行初始化，如果之前储存过标签顺序，就读取出来，如果没有，采用默认的
+
+
+
+创建一个界面TabsManager用于标签栏的改动
+
+总体是一个线性布局，上下分成两份，均为Grid，item是一个个的标签
+
+设置两个Grid的Adapter用于进行界面的生成，考虑传进两个数组，然后将数组中的主题标签依此排开
+
+```java
+public View getView(int position, View convertView, ViewGroup parent) {
+    ViewHolder holder;
+    if(convertView == null) {
+        holder = new ViewHolder();
+        convertView = LayoutInflater.from(mContext).inflate(R.layout.item_tab_manager, parent, false);
+        holder.title = (TextView) convertView.findViewById(R.id.title);
+        holder.delButton = (ImageView) convertView.findViewById(R.id.delButton);
+        convertView.setTag(holder);
+    }
+    else {
+        holder = (ViewHolder) convertView.getTag();
+    }
+    //第position个item显示第position个标题
+    holder.title.setText(titles.get(position));
+    //如果开启编辑模式，就显示删除图标,注意全部这个分类不能够删除
+    //在xml中不设置ImageView中的src属性，而是在getView中动态设置
+    if(editMode) {
+        if(position != 0) {
+            holder.delButton.setImageResource(R.drawable.delbutton);
+            holder.delButton.setVisibility(View.VISIBLE);
+            Animation shake = AnimationUtils.loadAnimation(mContext, R.anim.shake);
+            holder.delButton.startAnimation(shake);
+            holder.title.startAnimation(shake);
+            //设置item的点击事件
+            //注意点击事件只要注册一次就可以一直生效，所以我们可以直接在适配器中设置点击事件
+            holder.title.setOnClickListener(v -> {
+                //只要点击，就调用接口中的方法来调整list
+                mOnTitlesTransferListener.onTitlesTransfer(titles.get(position));
+            });
+        }
+        else {
+            holder.delButton.setImageResource(R.drawable.forbit_change);
+            holder.delButton.setVisibility(View.VISIBLE);
+            holder.delButton.clearAnimation();
+            holder.title.clearAnimation();
+
+        }
+    }
+    else {
+        holder.delButton.setVisibility(View.GONE); // 编辑模式为 false 时隐藏
+        holder.title.clearAnimation();
+        holder.delButton.clearAnimation();
+        holder.title.setOnClickListener(null);
+    }
+
+
+    if(position == 0) {
+        holder.title.setTextColor(mContext.getResources().getColor(R.color.light_black));;
+    }else {
+        holder.title.setTextColor(mContext.getResources().getColor(R.color.black)); // 用你默认的颜色
+    }
+    return convertView;
+}
+
+public void setEditMode(boolean editMode) {
+    this.editMode = editMode;
+    notifyDataSetChanged();
+}
+```
+
+设置变量editMode用于指示是否处于编辑状态，如果处于编辑状态，给item附加上抖动效果，同时设置点击事件监听器（注意点击事件监听器只要设置一次就可以一直生效，所以是可以在创建页面时设置的），用于更新数据
+
+如果不处于编辑状态，就要把点击事件，抖动效果等删除掉（因为item可能会复用，所以获取的convertView可能会带有效果，要显式删除）
+
+**如何改变编辑状态**
+
+在adapter中设置setEditMode方法，修改编辑状态，同时使用notifyDataSetChanged()来修改ui界面，在activity设置点击事件，一点击就反转当前编辑状态即可（常用方法，在adpter中设置数据调整的方法，当构建ui的数据发生改变，调用该方法）
+
+**如何同步数据**
+
+一般使用接口回调在activity和adapter之间，adapter和adapter之间进行数据交互
+
+在adapter的点击事件中调用了mOnTitlesTransferListener.onTitlesTransfer(titles.get(position));adapter中维护了一个接口类型的变量，并且有一个传入接口类型引用的方法，这样就可以在activity中设置方法并且传入adapter中调用
+
+```java
+//在Activity中定义两个Adapter中的接口，实现交互
+titlesAdapter.setOnTitlesTransferListener(new OnTitlesTransferListener() {
+    @Override
+    public void onTitlesTransfer(String tag) {
+        //改变两个list
+        MainActivity.titles.remove(titles.indexOf(tag));
+        MainActivity.titlesNoUse.add(tag);
+        titlesAdapter.remove(titlesAdapter.titles.indexOf(tag));
+        titlesNoUseAdapter.add(tag);
+    }
+});
+```
+
+**如何在编辑标签栏的同时让TabLayout和ViewPager同步改变**
+
+一般使用`startActivityForResult`来进行activity之间的数据交互
+
+有以下三个要点：
+
+1. 发送请求并且跳转页面：
+
+   ```java
+   ImageView tab_manager = findViewById(R.id.tab_manager);
+   tab_manager.setOnClickListener(v -> {
+       Intent intent = new Intent(MainActivity.this, TabsManager.class);
+       //启动界面并且接受返回结果
+       startActivityForResult(intent, REQUEST_CODE);
+   });
+   ```
+
+​	 startActivityForResult(intent, REQUEST_CODE);表示跳转到指定页面并且接受返回的数据
+
+2. 目标activity返回结果：
+
+   ```java
+   Intent resultIntent = new Intent();
+   //设置intent携带的数据
+   resultIntent.putExtra("update_titles", new ArrayList<String>(titles));
+   //将resultIntent设为结果进行返回，RESULT_OK是预定义的常量，表示成功
+   setResult(RESULT_OK, resultIntent);
+   finish();
+   ```
+
+3. 在原本的activity中接受结果并且进行相关的操作
+
+   需要重写onActivityResult方法
+
+   ```java
+   @Override
+   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+       super.onActivityResult(requestCode, resultCode, data);
+       //判断返回码
+       if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
+           //获取返回的数据
+           List<String> update_titles = data.getStringArrayListExtra("update_titles");
+           if (update_titles != null) {
+               //更新标题列表
+               MainActivity.titles = update_titles;
+               //再次设置tablayout和viewpager
+               viewpager.setAdapter(new FragmentStateAdapter(this) {
+                   //这里创建了一个匿名的FragmentStateAdapter对象
+                   @NonNull
+                   @Override
+                   //这个方法的返回值是一个Fragment对象，当ViewPager需要显示一个页面的时候就会调用
+                   //这个方法，根据位置返回一个Fragment对象
+                   public Fragment createFragment(int position) {
+                       //使用newInstance()方法创建一个Fragment对象，传入的主题参数使用titles[position]获取
+                       return TabNewsFragment.newInstance(titles.get(position));
+                   }
+   
+                   @Override
+                   //告诉ViewPager一共有多少个页面
+                   public int getItemCount() {
+                       //总的页面数就是标题的个数
+                       return titles.size();
+                   }
+               });
+   
+           }
+           //viewPager和tab_layout关联在一起
+           TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
+               @Override
+               public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                   tab.setText(titles.get(position));
+               }
+   
+           });
+   
+           //启用绑定
+           tabLayoutMediator.attach();
+       }
+   }
+   ```
+
+**TabsManager**:
+
+
+
+如何切换模式：
+
+在adapter中，
+
+1. 在getView中设置图标的显示状态，根据editMode来确定是否显示
+
+```java
+if(editMode) {
+    if(position != 0) {
+        holder.delButton.setImageResource(R.drawable.delbutton);
+        holder.delButton.setVisibility(View.VISIBLE);
+    }
+    else {
+        holder.delButton.setImageResource(R.drawable.forbit_change);
+        holder.delButton.setVisibility(View.VISIBLE);
+    }
+}
+else {
+    holder.delButton.setVisibility(View.GONE); // 编辑模式为 false 时隐藏
+}
+```
+
+2. 设置setEditorMode方法，可以设置editMode并且提醒改变视图
+
+   ```java
+   public void setEditMode(boolean editMode) {
+       this.editMode = editMode;
+       notifyDataSetChanged();
+   }
+   ```
+
+   
+
+在TabsManager中：
+
+维护两个GridView引用和两个Adapter的引用
+
+成员变量:int modeIndex，boolean editMode，维护了一个String类的长量数组，有编辑和完成两个值
+
+modeIndex用于指示按钮上的文字，editMode用于指示编辑模式
+
+按钮的点击事件会转变editMode和modeIndex，然后调用setEditorMode方法来改变item，同时改变按钮的文字
+
+
+
+设置动画：
+
+在res/anim中创建一个shake.xml作为抖动效果，然后再Adapter中进行应用
+
+```java
+if(editMode) {
+    if(position != 0) {
+        holder.delButton.setImageResource(R.drawable.delbutton);
+        holder.delButton.setVisibility(View.VISIBLE);
+        Animation shake = AnimationUtils.loadAnimation(mContext, R.anim.shake);
+        holder.delButton.startAnimation(shake);
+        holder.title.startAnimation(shake);
+    }
+    else {
+        holder.delButton.setImageResource(R.drawable.forbit_change);
+        holder.delButton.setVisibility(View.VISIBLE);
+        holder.delButton.clearAnimation();
+        holder.title.clearAnimation();
+    }
+}
+```
+
+
+
+**点击效果**：
+
+点击按键，会将Adapter中的list中的元素删除，同时发送一个信息到另一个Adapter中进行添加
+
+点击完成按钮后，会将当前的list存入SharedPreference，然后将全局的两个list进行更改，更新主界面的列表
+
+
+
+**接口回调**
+
+在Adapter中定义接口并且使用接口，在Activity的java文件中定义并且实例化接口，并且传入Adapter
+
+**实现Adapter和Adapter，Adapter和Activity之间的交互**
+
+在Adapter中定义接口并且使用接口，在Activity的java文件中定义并且实例化接口，这样接口方法中可以使用Activity中的控件和变量，并且和Adapter中定义的相关控件进行联系（比如说为getView中创建的控件设置点击事件）
+
+adapter之间的交互：可以分别设置并且使用接口，在activity中定义接口，这样可以以activity为中转实现交互
+
+
+
+### 新闻栏的详情界面
+
+详情页面：总体是一个RelativeLayout，左上方有退出键，下方有点赞，收藏等图标栏。新闻内容区是一个ScollView布局,可以进行滑动，里面嵌套一个线性布局，用于展示新闻信息。还有一个图片展示栏
+
+在NewsAdapter中对每一个item设置点击事件，点击后跳转到新闻详情界面，同时发送newslist中对应的该item的信息
+
+```java
+holder.itemView.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        Intent intent = new Intent(v.getContext(), NewsDetailActivity.class);
+        intent.putExtra("title", newsitem.title);
+        intent.putExtra("content", newsitem.content);
+        intent.putExtra("image", newsitem.image);
+        intent.putExtra("publisher", newsitem.publisher);
+        intent.putExtra("publishTime", newsitem.publishTime);
+        intent.putExtra("video", newsitem.video);
+        v.getContext().startActivity(intent);
+    }
+});
+```
+
+在新闻详情界面对应的java文件中会从intent中获取新闻信息，并且展示
+
+```java
+//从主界面获取新闻信息
+String titleText = getIntent().getStringExtra("title");
+String publishTimeText = getIntent().getStringExtra("publishTime");
+String publisherText = getIntent().getStringExtra("publisher");
+String contentText = getIntent().getStringExtra("content");
+String image = getIntent().getStringExtra("image");
+String video = getIntent().getStringExtra("video");
+String[] imageLinks = null;
+```
+
+**展示图片**：
+
+因为不知道图片有多少张，也不知道图片在界面的位置，所以考虑设置一个固定的图片展台，可以横向滑动查看图片，给图片设置点击事件，点击后可以跳转到一个页面展示完整的图片
+
+```xml
+<androidx.cardview.widget.CardView
+    android:id="@+id/image_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:layout_marginBottom="16dp"
+    android:visibility="gone"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="4dp"
+    app:cardUseCompatPadding="true">
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:fillViewport="true"
+        android:scrollbars="horizontal">
+
+        <LinearLayout
+            android:id="@+id/image_container"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp" />
+
+    </HorizontalScrollView>
+</androidx.cardview.widget.CardView>
+```
+
+cardview主要是呈现一个装饰的展台效果，注意这里`android:visibility="gone"`默认隐藏，当没有图片时这个框不显示
+
+里面嵌套一个滚动视图，由于滚动视图的限制，里面只能放一个子控件，所以为了应对多个图片的情况需要放一个LinearLayout来放图片
+
+在activity对应的java文件中设置图片（因为逻辑比较简单，所以就不像之前的新闻列表一样写适配器了）
+
+```java
+if(imageLinks != null && imageLinks.length > 0) {
+    imageCard.setVisibility(View.VISIBLE);
+    for (String url : imageLinks) {
+        ImageView imageView = new ImageView(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                300, // 宽度，可根据需要改为 ViewGroup.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        params.setMargins(8, 0, 8, 0);
+        imageView.setLayoutParams(params);
+        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+
+        Glide.with(this).load(url).into(imageView);
+        imageContainer.addView(imageView);
+    }
+}
+else {
+    imageCard.setVisibility(View.GONE);
+}
+```
+
+* 如果有图片就将cardView设置为可见
+* 遍历图片链接，创建一个ImageView来展示图片
+* LayoutParams是LinearLayout中用于子视图向父视图传递布局参数的类，这里创建这个类对象params，并且设置了长，宽和margin
+* 然后将params设置到imageView上面去，并且设置imageView的展示方式
+* 使用Glide将图片加载到imageView上
+* 将imageView加入到外层的容器(LinearLayout)中，这样图片就展示了出来
+* 注意如果没有图片要显示设定cardView不显示，防止复用视图时出问题
+
+为了方便用户看图片，专门设置了一个活动页面PictureDisplayActivity，用于展示图片
+
+对于详情页中的图片列表设置点击事件，点击就跳转到图片页，同时传入图片链接，在页面中单独展示图片
+
+图片页使用了PhotoView来展示，可以实现图片缩放功能，其余地方设置点击事件，点击就退出图片页
+
+==注意PhotoView的配置除了要在libs中配，还要在setting中加上一行`maven { url = uri("https://jitpack.io") }`==
+
+```xml
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") } //加上这行
+    }
+}
+```
+
+
+
+
+
 ### bug
 
 1. 在刚刚打开app时点击第6个标签页就会闪退，点击其他页面就不会，先点击其他页面再点击第6个页面也不会
@@ -2248,6 +2721,50 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
 
 ​	可能是由于网络协议的兼容问题
 
+3. 标签增删界面点击item会闪退？？？
+
+   问题在于初始化Adapter中的list的时候我使用了=，这样Adapter中的list和全局list指向同一个对象，出现重复增删的错误
+
+4. 重用带来的错误：
+
+   为了减少重新创建item的消耗，我们设置了重新使用废弃的View的机制
+
+   ```java
+   if(convertView == null) {
+       holder = new TitlesNoUseAdapter.ViewHolder();
+       convertView = LayoutInflater.from(mContext).inflate(R.layout.item_tab_manager, parent, false);
+       holder.title = (TextView) convertView.findViewById(R.id.title);
+       holder.delButton = (ImageView) convertView.findViewById(R.id.delButton);
+       convertView.setTag(holder);
+   }
+   else {
+       holder = (TitlesNoUseAdapter.ViewHolder) convertView.getTag();
+   }
+   ```
+
+​		但是当转为编辑模式时，item会带上抖动特效和点击事件，当非编辑模式重用item,如果不在getView时取消掉，item回想编辑模式一样抖动和可点击，所以在getView中除了在editorMode为真true设置特效，在为false时还要取消特效
+
+```java
+if(editMode) {
+    holder.delButton.setImageResource(R.drawable.delbutton);
+    holder.delButton.setVisibility(View.VISIBLE);
+    Animation shake = AnimationUtils.loadAnimation(mContext, R.anim.shake);
+    holder.delButton.startAnimation(shake);
+    holder.title.startAnimation(shake);
+    holder.title.setOnClickListener(v -> {
+        //只要点击，就调用接口中的方法来调整list
+        mOnTitlesNoUseTransferListener.onTitlesNoUseTransfer(titlesNoUse.get(position));
+    });
+}
+else {
+    //取消各种效果
+    holder.delButton.setVisibility(View.GONE); // 编辑模式为 false 时隐藏
+    holder.title.clearAnimation();
+    holder.delButton.clearAnimation();
+    holder.title.setOnClickListener(null);
+}
+```
+
 ### 功能思考
 
 图片展示样式(实现)
@@ -2265,3 +2782,5 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
 后端服务器能否实现？？
 
 #### 申请分享
+
+#### 图像识别来剔除低质量图片

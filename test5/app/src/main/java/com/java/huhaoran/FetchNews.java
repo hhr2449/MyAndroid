@@ -124,14 +124,18 @@ public class FetchNews {
 
         for (String part : rawParts) {
             part = part.trim();
-            // 过滤空项、空字符串、null 字符
-            if (!part.isEmpty() && !part.equalsIgnoreCase("null")) {
+            // 过滤空项、空字符串、null 字符，以及指定后缀的链接
+            if (!part.isEmpty() &&
+                    !part.equalsIgnoreCase("null") &&
+                    !part.endsWith("chrome.jpg") &&
+                    !part.endsWith("360_logo.png")) {
                 validLinks.add(part);
             }
         }
 
         return validLinks.toArray(new String[0]);
     }
+
 
 
 

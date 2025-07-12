@@ -2,15 +2,19 @@ package com.java.huhaoran;
 
 import static com.java.huhaoran.FetchNews.getLinks;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 import java.util.List;
 
@@ -30,12 +34,14 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     }
     //创建ViewHolder
     static class NewsViewHolder extends RecyclerView.ViewHolder {
+        RelativeLayout itemView;
         //成员变量就是一条item中每个控件的引用
         TextView title, publisher, time;
         ImageView image1, image2, image3;
         //ViewHolder类同样也有支持item类型的构造函数
         public NewsViewHolder(View view, int type) {
             super(view);
+            itemView = view.findViewById(R.id.item_view);
             title = (TextView) view.findViewById(R.id.title);
             publisher = (TextView) view.findViewById(R.id.publisher);
             time = (TextView) view.findViewById(R.id.time);
@@ -136,6 +142,22 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             e.printStackTrace();
 
         }
+        //设置点击事件监听，点击列表可以跳转到对应的新闻详情页面
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(v.getContext(), NewsDetailActivity.class);
+                intent.putExtra("title", newsitem.title);
+                intent.putExtra("content", newsitem.content);
+                intent.putExtra("image", newsitem.image);
+                intent.putExtra("publisher", newsitem.publisher);
+                intent.putExtra("publishTime", newsitem.publishTime);
+                intent.putExtra("video", newsitem.video);
+                v.getContext().startActivity(intent);
+            }
+        });
+
+
 
 
     }
