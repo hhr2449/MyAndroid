@@ -25,33 +25,23 @@
             android:id="@+id/search"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:background="@drawable/searchbar"
+            android:background="@drawable/grey_rounded_bigger_radius"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="45dp">
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/baseline_search_24"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/search_icon"
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="5dp"/>
-            <!-- 分割线 -->
-            <View
-                android:id="@+id/divider"
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="@color/colorAccent"
-                android:layout_toRightOf="@drawable/baseline_search_24"
-                android:layout_centerVertical="true"
-                android:layout_marginLeft="38dp"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:text="热点搜索"
-                android:textColor="#000000"
+                android:textColor="@color/light_black"
                 android:gravity="center"
-                android:textStyle="bold"
-                android:layout_marginLeft="45dp"/>
+                android:layout_marginLeft="40dp"/>
 
         </RelativeLayout>
 

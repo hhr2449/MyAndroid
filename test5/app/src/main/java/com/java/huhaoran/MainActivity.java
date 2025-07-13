@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import com.google.android.material.navigation.NavigationView;
 
@@ -33,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     public static List<String> titles = new ArrayList<String>();
     public static List<String> titlesNoUse = new ArrayList<String>();
 
-    private String[] categories = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
+    private final String[] categories = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
 
     //newsCache用于缓存新闻数据，避免重复请求
     public static Map<String, List<FetchNews.NewsItem>> newsCache = new HashMap<>();
@@ -154,6 +155,15 @@ public class MainActivity extends AppCompatActivity {
 //----------------------实现主题栏-----------------------------------------------
 
 
+        //-------------------搜索栏跳转--------------------------
+
+        RelativeLayout search = findViewById(R.id.search);
+        search.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+            startActivity(intent);
+        });
+
+        //-------------------搜索栏跳转--------------------------
 
 
 
@@ -162,6 +172,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    //-------------------同步标签----------------------------
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -207,6 +219,9 @@ public class MainActivity extends AppCompatActivity {
             tabLayoutMediator.attach();
         }
     }
+    //-------------------同步标签----------------------------
+
+
 
 
 }

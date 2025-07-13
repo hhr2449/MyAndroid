@@ -47,7 +47,7 @@
                 android:layout_weight="1"
                 android:scaleType="centerCrop"
                 android:layout_marginEnd="4dp"
-                android:background="@drawable/image_rounded_background" />
+                android:background="@drawable/white_rounded" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

@@ -10,5 +10,5 @@
     </item>
 
     <!-- 默认状态：引用原有灰色圆角背景 -->
-    <item android:drawable="@drawable/grey_rounded" />
+    <item android:drawable="@drawable/red_rounded" />
 </selector>

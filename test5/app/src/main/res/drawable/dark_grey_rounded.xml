@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/dark_grey" />
+    <corners android:radius="8dp" /> <!-- 设置你想要的圆角半径 -->
+</shape>
+<!--这是第二种样式，其实不是用于tabs栏的，而是用于搜索界面属性栏的，代表被选中-->

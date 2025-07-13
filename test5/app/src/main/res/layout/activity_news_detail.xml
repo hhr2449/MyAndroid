@@ -13,7 +13,7 @@
         android:layout_margin="12dp"
         android:scaleType="centerCrop"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/back"
+        android:src="@drawable/back_with_arrow"
         android:contentDescription="返回"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true" />

@@ -33,7 +33,9 @@ public abstract class AppDatabase extends RoomDatabase{
                     context.getApplicationContext(),
                     AppDatabase.class,
                     "app_database.db"
-            ).build();
+            )
+            .fallbackToDestructiveMigration()  // 强制重建数据库（数据丢失！）
+            .build();
         }
         return INSTANCE;
     }

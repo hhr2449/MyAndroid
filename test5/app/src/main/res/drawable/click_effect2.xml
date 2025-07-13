@@ -9,6 +9,6 @@
         </shape>
     </item>
 
-    <!-- 默认状态：引用原有灰色圆角背景 -->
-    <item android:drawable="@drawable/grey_rounded" />
+    <!-- 默认状态：引用深灰色圆角背景 -->
+    <item android:drawable="@drawable/dark_grey_rounded" />
 </selector>

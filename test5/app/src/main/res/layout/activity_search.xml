@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/searchactivity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    tools:context=".SearchActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <!-- 返回按钮 -->
+        <ImageView
+            android:id="@+id/back_button"
+            android:layout_width="40dp"
+            android:layout_height="35dp"
+            android:paddingVertical="5dp"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/back_with_angle"
+            android:contentDescription="Back" />
+
+        <!-- 搜索输入区域 -->
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <!-- EditText 输入框 -->
+            <EditText
+                android:id="@+id/search_edittext"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:hint="请输入关键词"
+                android:textColorHint="@color/light_black"
+                android:textColor="#000000"
+                android:background="@drawable/grey_rounded_bigger_radius"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp"
+                android:textSize="16sp"
+                android:inputType="text" />
+
+            <!-- 搜索图标 -->
+            <ImageView
+                android:id="@+id/icon_search"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="10dp"
+                android:src="@drawable/search_icon"
+                android:contentDescription="Search Icon" />
+
+            <!-- 清除输入按钮 -->
+            <ImageView
+                android:id="@+id/icon_clear"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/clear_icon"
+                android:visibility="gone"
+                android:contentDescription="Clear Text" />
+        </RelativeLayout>
+
+        <!-- 搜索文字按钮 -->
+        <TextView
+            android:id="@+id/btn_search_text"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="搜索"
+            android:textColor="@color/dark_red"
+            android:textSize="16sp"
+            android:paddingHorizontal="12dp"
+            android:layout_gravity="center_vertical"
+            android:background="?attr/selectableItemBackground" />
+    </LinearLayout>
+
+    <GridView
+        android:id="@+id/categories_choose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:numColumns="5" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

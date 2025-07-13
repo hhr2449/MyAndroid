@@ -14,11 +14,11 @@
 
     <ImageView
         android:id="@+id/backbutton"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="40dp"
+        android:layout_height="35dp"
         android:layout_marginTop="10dp"
         android:layout_gravity="end|top"
-        android:src="@drawable/baseline_navigate_before_24" />
+        android:src="@drawable/back_with_angle" />
 
     <ImageView
         android:id="@+id/headimage"

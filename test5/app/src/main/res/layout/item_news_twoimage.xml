@@ -47,7 +47,7 @@
                 android:layout_weight="1"
                 android:scaleType="centerCrop"
                 android:layout_marginEnd="4dp"
-                android:background="@drawable/image_rounded_background" />
+                android:background="@drawable/white_rounded" />
 
             <ImageView
                 android:id="@+id/image2"
@@ -57,7 +57,7 @@
                 android:scaleType="centerCrop"
                 android:layout_marginStart="2dp"
                 android:layout_marginEnd="2dp"
-                android:background="@drawable/image_rounded_background" />
+                android:background="@drawable/white_rounded" />
 
 
         </LinearLayout>
