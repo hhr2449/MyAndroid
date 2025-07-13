@@ -3193,6 +3193,267 @@ List<NoteWithUser> notes = noteDao.getNotesWithUsers();
 
 
 
+考虑设置一个类用于存放搜索的信息，包括关键词，起止时间，类别
+
+后端api支持多类别搜索
+
+
+
+#### 创建一个SearchData类，用于存放搜索的信息
+
+```java
+package com.java.huhaoran;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+
+
+//这是一个专门用于管理和储存搜索数据的类，方便进行传递和储存
+public class SearchData {
+    private String keyword;
+    private HashSet<String> categories;
+    private String startDate;
+    private String endDate;
+
+    // 构造方法
+    public SearchData() {
+        // 默认构造器
+        categories = new HashSet<String>();
+    }
+
+    public SearchData(@NonNull String keyword, @Nullable LinkedList<String> categories, @Nullable String startDate, @Nullable String endDate) {
+        this.keyword = keyword;
+        this.categories = new HashSet<String>(categories);
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+    // Getter 和 Setter
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
+
+    public HashSet<String> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(LinkedList categories) {
+        this.categories = new HashSet<String>(categories);
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    // 调试用输出
+    @NonNull
+    @Override
+    public String toString() {
+        return "SearchData{" +
+                "keyword='" + keyword + '\'' +
+                ", categories=" + categories.toString() +
+                ", startDate='" + startDate + '\'' +
+                ", endDate='" + endDate + '\'' +
+                '}';
+    }
+}
+
+```
+
+
+
+#### 搜索框的实现
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/searchactivity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".SearchActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <!-- 返回按钮 -->
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/back_in_searchactivity"
+            android:contentDescription="Back" />
+
+        <!-- 搜索输入区域 -->
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp">
+
+            <!-- EditText 输入框 -->
+            <EditText
+                android:id="@+id/search_edittext"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:hint="Search"
+                android:textColorHint="@color/light_black"
+                android:textColor="#000000"
+                android:background="@drawable/searchbar"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp"
+                android:textSize="16sp"
+                android:inputType="text" />
+
+            <!-- 搜索图标 -->
+            <ImageView
+                android:id="@+id/icon_search"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="10dp"
+                android:src="@drawable/search_icon"
+                android:contentDescription="Search Icon" />
+
+            <!-- 清除输入按钮 -->
+            <ImageView
+                android:id="@+id/icon_clear"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/clear"
+                android:visibility="gone"
+                android:contentDescription="Clear Text" />
+        </RelativeLayout>
+
+        <!-- 搜索文字按钮 -->
+        <TextView
+            android:id="@+id/btn_search_text"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="搜索"
+            android:textColor="@color/dark_red"
+            android:textSize="16sp"
+            android:paddingHorizontal="12dp"
+            android:layout_gravity="center_vertical"
+            android:background="?attr/selectableItemBackground" />
+    </LinearLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>
+```
+
+关键点：
+
+1. 使用relativeLayout来设置搜索框及其图标
+2. 搜索框的padding只会影响到搜索框的内容，也就是输入的内容显示范围，但是不会影响搜索框的背景显示，所以可以设置搜索框的padding来让图标在旁边显示
+3. clear图标设置成默认为不显示，有输入的时候才设置成显示
+
+设置EditText的监视器，当里面有文字的时候就显示删除按键：
+
+```java
+search_edittext.addTextChangedListener(new TextWatcher() {
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+    }
+    @Override
+    //当文字发生改变的时候
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+        //设置删除图标是否可见
+        //如果搜索框文字不为空（s不为空），则设置为可见，否则不可见
+        ImageView icon_clear = findViewById(R.id.icon_clear);
+        if(!TextUtils.isEmpty(s)) {
+            icon_clear.setVisibility(View.VISIBLE);
+        }
+        else {
+            icon_clear.setVisibility(View.GONE);
+        }
+    }
+    @Override
+    public void afterTextChanged(Editable s) {}
+});
+```
+
+删除按键点击事件：
+
+```java
+//注册删除按键的点击事件
+icon_clear.setOnClickListener(v -> {
+   search_edittext.setText("");
+});
+```
+
+
+
+#### 按照类别进行搜索
+
+考虑设置一个网格布局，里面放上所有的类别，设置一个对应的adapter，只要点击就会改变颜色（使用之前的效果），然后设置接口回调来传递信息
+
+**adapter**:
+
+每个对应一个category的标签，内置一个category的数组，含有属性isChoose，表示是否被选择
+
+getView方法中，会根据position来获取对应的数组中的类别，根据isChoose来决定呈现的颜色深浅
+
+设置方法setChooseCondition，用于设置isChoose的值，该方法中会改变ui界面，调用接口方法，接口方法应该将一个boolean作为参数，对应的就是isChoose，当true的时候将该标签放入set中，否则移除
+
+设置点击事件，当点击的时候调用setChooseCondition，将当前的isChoose反转
+
+
+
+#### 显示历史搜索记录
+
+在数据库中建立一个用于储存历史搜索记录的表单
+
+因为要求实现按照关键词，类别，时间来进行搜索，所以这里应该分别储存这三个属性
+
+储存搜索的时间
+
+搜索记录的显示应该使用一个RecyclerLayout，一次只显示一定的条数，下方有一个更多的选项，点击可以继续显示
+
+可以清空记录（数据库的删除功能）
+
+
+
+
+
+
+
+或许可以加上一个无痕搜索（浏览），开了这个以后不会记录浏览和搜索的记录
+
+
+
+
+
 ### bug
 
 1. 在刚刚打开app时点击第6个标签页就会闪退，点击其他页面就不会，先点击其他页面再点击第6个页面也不会
@@ -3290,3 +3551,6 @@ else {
 #### 申请分享
 
 #### 图像识别来剔除低质量图片
+
+
+
