@@ -144,7 +144,7 @@ public class TabNewsFragment extends Fragment {
             currentPage++;
             //开线程请求数据
             String title_tmp = title.equals("全部") ? "" : title;
-            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1900-01-01", "", new String[]{""}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1900-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
 
 
             if (response != null && response.data != null&& !response.data.isEmpty()) {

@@ -3,7 +3,8 @@
     android:id="@+id/item_view"
     android:layout_width="match_parent"
     android:layout_height="120dp"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:background="@drawable/click_effect4">
 
     <!-- 新闻标题 -->
     <TextView

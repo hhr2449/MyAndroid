@@ -1,6 +1,7 @@
 package com.java.huhaoran;
 
 import android.os.Bundle;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -20,6 +21,8 @@ public class SearchResultActivity extends AppCompatActivity {
         SearchData searchData = (SearchData) getIntent().getSerializableExtra("searchData");
         TextView textView = findViewById(R.id.textView);
         textView.setText(searchData.toString());
+        ImageView imageView = findViewById(R.id.back_button);
+        imageView.setOnClickListener(v -> finish());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());

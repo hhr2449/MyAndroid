@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 按下状态：透明背景 + 边框 + 圆角 -->
+    <!-- 按下状态：深灰色背景 + 边框 + 圆角 -->
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
-            <solid android:color="@android:color/transparent" />
-            <corners android:radius="8dp" />
+            <solid android:color="@color/white" />
+            <corners android:radius="20dp" />
         </shape>
     </item>
 
     <!-- 默认状态：引用原有灰色圆角背景 -->
-    <item android:drawable="@drawable/grey_rounded" />
+    <item android:drawable="@drawable/grey_rounded_bigger_radius" />
 </selector>

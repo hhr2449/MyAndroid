@@ -6,36 +6,41 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="10dp"
-    tools:context=".SearchActivity">
+    android:padding="16dp"
+    tools:context=".SearchActivity"
+    android:background="#FFFFFF">
 
+    <!-- 搜索区域 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
 
         <!-- 返回按钮 -->
         <ImageView
             android:id="@+id/back_button"
-            android:layout_width="40dp"
-            android:layout_height="35dp"
-            android:paddingVertical="5dp"
-            android:layout_gravity="center_vertical"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/back_with_angle"
-            android:contentDescription="Back" />
+            android:contentDescription="Back"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
-        <!-- 搜索输入区域 -->
+        <!-- 搜索输入框区域 -->
         <RelativeLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp">
 
-            <!-- EditText 输入框 -->
+            <!-- 输入框 -->
             <EditText
                 android:id="@+id/search_edittext"
                 android:layout_width="match_parent"
-                android:layout_height="40dp"
+                android:layout_height="match_parent"
                 android:hint="请输入关键词"
                 android:textColorHint="@color/light_black"
                 android:textColor="#000000"
@@ -43,51 +48,124 @@
                 android:paddingStart="40dp"
                 android:paddingEnd="40dp"
                 android:textSize="16sp"
-                android:inputType="text" />
+                android:singleLine="true" />
 
             <!-- 搜索图标 -->
             <ImageView
                 android:id="@+id/icon_search"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="12dp"
                 android:src="@drawable/search_icon"
                 android:contentDescription="Search Icon" />
 
-            <!-- 清除输入按钮 -->
+            <!-- 清空图标 -->
             <ImageView
                 android:id="@+id/icon_clear"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:layout_marginEnd="10dp"
+                android:layout_marginEnd="12dp"
                 android:src="@drawable/clear_icon"
-                android:visibility="gone"
-                android:contentDescription="Clear Text" />
+                android:contentDescription="Clear Text"
+                android:visibility="gone" />
         </RelativeLayout>
 
         <!-- 搜索文字按钮 -->
         <TextView
             android:id="@+id/btn_search_text"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="match_parent"
             android:gravity="center"
             android:text="搜索"
-            android:textColor="@color/dark_red"
+            android:textColor="@color/white"
             android:textSize="16sp"
-            android:paddingHorizontal="12dp"
-            android:layout_gravity="center_vertical"
-            android:background="?attr/selectableItemBackground" />
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/red_rounded_button" />
     </LinearLayout>
 
-    <GridView
-        android:id="@+id/categories_choose"
+    <!-- 分类提示文字 -->
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="搜索类别"
+        android:textColor="@color/dark_red"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 分类 GridView -->
+    <GridView
+        android:id="@+id/categories_choose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:numColumns="5"
+        android:verticalSpacing="8dp"
+        android:horizontalSpacing="8dp"
+        android:gravity="center" />
+
+    <!-- 日期提示文字 -->
+    <!-- 日期选择标签 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="日期范围"
+        android:textColor="@color/dark_red"
+        android:textSize="16sp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 起始日期 & 结束日期选择区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:gravity="center"
-        android:numColumns="5" />
+        android:layout_marginBottom="10dp"
+        android:weightSum="2"
+        android:paddingHorizontal="8dp">
+
+        <!-- 起始日期 -->
+        <TextView
+            android:id="@+id/text_start_date"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="开始日期"
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:background="@drawable/click_effect"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="8dp" />
+
+        <!-- 结束日期 -->
+        <TextView
+            android:id="@+id/text_end_date"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="结束日期"
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:background="@drawable/click_effect"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+    <ImageView
+        android:id="@+id/clear_date"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:src="@drawable/clear_icon2"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:layout_gravity="end"
+        android:layout_marginBottom="24dp"/>
+
 
 </androidx.appcompat.widget.LinearLayoutCompat>

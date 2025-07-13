@@ -12,6 +12,7 @@
         android:layout_width="25dp"
         android:layout_height="25dp"
         android:src="@drawable/back_with_cross"
+        android:background="?attr/selectableItemBackgroundBorderless"
         android:layout_marginBottom="20dp"
         android:layout_marginLeft="18dp"/>
 

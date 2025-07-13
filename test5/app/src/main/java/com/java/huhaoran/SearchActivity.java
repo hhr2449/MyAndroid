@@ -1,5 +1,6 @@
 package com.java.huhaoran;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -10,6 +11,7 @@ import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +19,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.java.huhaoran.R;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 public class SearchActivity extends AppCompatActivity {
 
@@ -31,12 +39,23 @@ public class SearchActivity extends AppCompatActivity {
     //类别搜索栏
     private GridView category_gridview;
 
+    //用于选择搜索日期
+    //思路是设置两个日期框，点击就会弹出calendar，选择日期
+    TextView textStartDate, textEndDate;
+    Calendar calendar;
+
+    //清除日期
+    ImageView clear_date;
+
     private void getViews() {
         search_edittext = findViewById(R.id.search_edittext);
         search_button = findViewById(R.id.btn_search_text);
         icon_clear = findViewById(R.id.icon_clear);
         back = findViewById(R.id.back_button);
         category_gridview = findViewById(R.id.categories_choose);
+        textStartDate = findViewById(R.id.text_start_date);
+        textEndDate = findViewById(R.id.text_end_date);
+        clear_date = findViewById(R.id.clear_date);
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +88,6 @@ public class SearchActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 //设置删除图标是否可见
                 //如果搜索框文字不为空（s不为空），则设置为可见，否则不可见
-                ImageView icon_clear = findViewById(R.id.icon_clear);
                 if(!TextUtils.isEmpty(s)) {
                     icon_clear.setVisibility(View.VISIBLE);
                 }
@@ -97,14 +115,29 @@ public class SearchActivity extends AppCompatActivity {
             }
         });
 
+        //选择日期
+        //获取Calender类的实例，用来获取当前日期
+        calendar = Calendar.getInstance();
+        //两个文本框的点击事件
+        textStartDate.setOnClickListener(v -> showDatePickerDialog(true));
+        textEndDate.setOnClickListener(v -> showDatePickerDialog(false));
+
+        //清空日期
+        clear_date.setOnClickListener(v -> {
+            searchData.setStartDate(null);
+            searchData.setEndDate(null);
+            textStartDate.setText("开始日期");
+            textEndDate.setText("结束日期");
+        });
+
+
 
         //当点下搜索键的时候获取搜索输入，并且跳转到搜索结果页面
         search_button.setOnClickListener(v -> {
             //设置输入的关键词
             searchData.setKeyword(((EditText) findViewById(R.id.search_edittext)).getText().toString().trim());
             //类别已经添加
-
-
+            //时间已经添加
             Intent intent = new Intent(SearchActivity.this, SearchResultActivity.class);
             intent.putExtra("searchData", searchData);
             startActivity(intent);
@@ -112,4 +145,66 @@ public class SearchActivity extends AppCompatActivity {
 
 
     }
+    private void showDatePickerDialog(boolean isStartDate) {
+        //获取当前的年，月，日
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        //定义了一个DatePickerDialog控件
+        //参数依次是：上下文，监听，默认年，月，日
+        //监听器就是点击了日历中的确定会执行的代码
+        //监听器的参数是当前的DatePicker对象，选择的年，月，日
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year1, month1, dayOfMonth) -> {
+            //获取日期字符串，这里将年，月，日格式化为4位，2位，2位
+            //注意月是0-11，所以要加1
+            String date = String.format(Locale.getDefault(), "%04d-%02d-%02d", year1, month1 + 1, dayOfMonth);
+            //更新文本框
+            if (isStartDate) {
+                if(searchData.getEndDate() != null) {
+                    //如果结束日期不为空，则判断是否大于开始日期
+                    if(dateCompare(date, searchData.getEndDate()) > 0) {
+                        //如果更大，则弹出提示
+                        Toast.makeText(SearchActivity.this, "开始日期不能大于结束日期", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+                textStartDate.setText(date);
+                searchData.setStartDate(date);
+            } else {
+                if(searchData.getStartDate() != null) {
+                    //如果开始日期不为空，则判断是否小于开始日期
+                    if(dateCompare(date, searchData.getStartDate()) < 0) {
+                        //如果更小，则弹出提示
+                        Toast.makeText(SearchActivity.this, "结束日期不能小于开始日期", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+                textEndDate.setText(date);
+                searchData.setEndDate(date);
+            }
+        }, year, month, day);
+
+        // 防止用户选未来
+        datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+
+
+        //展示日历
+        datePickerDialog.show();
+    }
+
+
+    //日期比较
+    //约定：格式一定是年-月-日
+    //约定：date1 > date2，则返回1, date1 < date2，则返回-1, date1 = date2，则返回0
+    private int dateCompare(String date1, String date2) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            Date d1 = sdf.parse(date1);
+            Date d2 = sdf.parse(date2);
+            return d1.compareTo(d2); // d1 > d2 => 1, d1 < d2 => -1, d1 == d2 => 0
+        } catch (ParseException e) {
+            return -2; // 格式错误
+        }
+    }
+
 }

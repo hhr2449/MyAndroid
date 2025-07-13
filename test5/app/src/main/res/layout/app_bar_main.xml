@@ -20,12 +20,13 @@
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:src="@drawable/baseline_menu_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_marginLeft="10dp"/>
         <RelativeLayout
             android:id="@+id/search"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:background="@drawable/grey_rounded_bigger_radius"
+            android:background="@drawable/click_effect5"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="45dp">
             <ImageView
@@ -79,6 +80,7 @@
             android:layout_height="25dp"
             android:layout_marginRight="10dp"
             android:layout_alignParentRight="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_centerVertical="true"
             android:src="@drawable/menu_in_tab" />
 
