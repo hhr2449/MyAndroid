@@ -3,6 +3,7 @@ package com.java.huhaoran;
 import static com.java.huhaoran.FetchNews.getLinks;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.java.huhaoran.note.BrowseHistoryNote;
 
 import java.util.List;
 
@@ -142,10 +144,32 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             e.printStackTrace();
 
         }
+        //如果已经读过该新闻（记录了对应的title），则字体显示灰色
+        AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
+        new Thread(() -> {
+            boolean isRead = db.browseHistoryDao().existsByTitle(newslist.get(position).title);
+            holder.itemView.post(() -> {
+                if (isRead) {
+                    holder.title.setTextColor(Color.parseColor("#8E8B8B"));
+                }
+                else {
+                    holder.title.setTextColor(Color.parseColor("#000000"));
+                }
+            });
+        }).start();
         //设置点击事件监听，点击列表可以跳转到对应的新闻详情页面
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //记录浏览过的新闻
+                AppDatabase db = AppDatabase.getInstance(v.getContext());
+                new Thread(() -> {
+                    BrowseHistoryNote note = new BrowseHistoryNote(newsitem.title, newsitem.publishTime, newsitem.content, newsitem.publisher, newsitem.category, newsitem.image, newsitem.video);
+                    db.browseHistoryDao().insert(note);
+                }).start();
+                //改变颜色
+                holder.title.setTextColor(Color.parseColor("#8E8B8B"));
+                //跳转页面
                 Intent intent = new Intent(v.getContext(), NewsDetailActivity.class);
                 intent.putExtra("title", newsitem.title);
                 intent.putExtra("content", newsitem.content);

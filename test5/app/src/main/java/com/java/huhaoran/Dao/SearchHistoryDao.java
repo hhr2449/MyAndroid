@@ -1,5 +1,6 @@
 package com.java.huhaoran.Dao;
 
+import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -9,6 +10,7 @@ import com.java.huhaoran.note.SearchHistoryNote;
 
 import java.util.List;
 
+@Dao
 public interface SearchHistoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

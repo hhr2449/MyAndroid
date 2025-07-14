@@ -10,6 +10,8 @@ import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import com.java.huhaoran.Dao.BrowseHistoryDao;
+import com.java.huhaoran.Dao.SearchHistoryDao;
 import com.java.huhaoran.Dao.SummaryDao;
 import com.java.huhaoran.note.BrowseHistoryNote;
 import com.java.huhaoran.note.SearchHistoryNote;
@@ -21,6 +23,8 @@ import java.util.concurrent.Executors;
 public abstract class AppDatabase extends RoomDatabase{
     //用于获取实体类对应的Dao对象的方法
     public abstract SummaryDao summaryDao();
+    public abstract SearchHistoryDao searchHistoryDao();
+    public abstract BrowseHistoryDao browseHistoryDao();
 
     //单例对象
     private static volatile AppDatabase INSTANCE;

@@ -138,7 +138,8 @@ public class FetchNews {
             if (!part.isEmpty() &&
                     !part.equalsIgnoreCase("null") &&
                     !part.endsWith("chrome.jpg") &&
-                    !part.endsWith("360_logo.png")) {
+                    !part.endsWith("360_logo.png") &&
+                    !part.endsWith("share.png")) {
                 validLinks.add(part);
             }
         }
@@ -156,28 +157,10 @@ public class FetchNews {
         List<NewsItem> data;
     }
 
-    static class Organizations {
-        String mention;
-        String count;
-    }
-
-
-    static class KeyWord {
-        String word;
-        String score;
-    }
-
-    static class Location {
-        String mention;
-    }
-
 
     static class NewsItem {
         String title;
         String publishTime;
-        List<KeyWord> keywords;
-        List<Organizations> organizations;
-        List<Location> locations;
         String content;
         String publisher;
         String category;
