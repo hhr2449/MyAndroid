@@ -3186,6 +3186,10 @@ List<NoteWithUser> notes = noteDao.getNotesWithUsers();
 
 2. 插入时，如果主键已经存在会报错，可以设置`@Insert(onConflict = OnConflictStrategy.REPLACE)`代表如果冲突则替换
 
+3. 如果对数据库的结构进行修改，则需要对数据库进行版本升级并且提供迁移方法，否则会出错，当然可以通过重装解决，但是这样数据会丢失
+
+4. 注意对数据库的操作不能够在主线程中进行，一定要单独开一个线程
+
 
 
 ### 实现搜索界面
