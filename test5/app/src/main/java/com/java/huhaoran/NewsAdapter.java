@@ -157,9 +157,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             }
         });
 
-
-
-
     }
     //获取item的总数
     @Override

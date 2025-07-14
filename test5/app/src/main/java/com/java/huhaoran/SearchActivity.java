@@ -38,6 +38,8 @@ public class SearchActivity extends AppCompatActivity {
     private ImageView back;
     //类别搜索栏
     private GridView category_gridview;
+    //是否从搜索结果界面跳转
+    private boolean fromResult = false;
 
     //用于选择搜索日期
     //思路是设置两个日期框，点击就会弹出calendar，选择日期
@@ -66,8 +68,22 @@ public class SearchActivity extends AppCompatActivity {
         //获取控件
         getViews();
 
-        //构造查询信息
-        searchData = new SearchData();
+        //如果是从搜索结果界面跳转的话
+        if(getIntent().getSerializableExtra("searchData") != null) {
+            //直接重用原本的搜索信息
+            searchData = (SearchData) getIntent().getSerializableExtra("searchData");
+            search_edittext.setText(searchData.getKeyword());
+            String startdate = searchData.getStartDate() == null ? "开始日期" : searchData.getStartDate();
+            textStartDate.setText(startdate);
+            String enddate = searchData.getEndDate() == null ? "结束日期" : searchData.getEndDate();
+            textEndDate.setText(enddate);
+            fromResult = true;
+        }
+        else {
+            //否则新建一个搜索信息
+            searchData = new SearchData();
+        }
+
 
         //设置返回键
         back.setOnClickListener(v -> finish());
@@ -99,7 +115,7 @@ public class SearchActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
         //设置类别搜索的界面
-        SearchCategoryAdapter searchCategoryAdapter = new SearchCategoryAdapter(this);
+        SearchCategoryAdapter searchCategoryAdapter = new SearchCategoryAdapter(this, fromResult, searchData.getCategories());
         category_gridview.setAdapter(searchCategoryAdapter);
         //传入接口对象
         searchCategoryAdapter.setOnCategoryTransferListener(new OnCategoryTransferListener() {
@@ -113,6 +129,7 @@ public class SearchActivity extends AppCompatActivity {
                     searchData.deleteCategory(tag);
                 }
             }
+
         });
 
         //选择日期

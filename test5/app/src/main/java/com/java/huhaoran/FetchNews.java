@@ -21,11 +21,15 @@ import java.util.List;
 public class FetchNews {
     // 接口地址模板
     private static final String BASE_URL = "https://api2.newsminer.net/svc/news/queryNewsList";
-    public static NewsResponse fetchNews(String size, String startDate, String endDate, String[] words, String categories, String page) {
+    public static NewsResponse fetchNews(String size, String startDate, String endDate, String[] words, String[] categories, String page) {
         String url = BASE_URL + "?size=" + size;
 
         if (startDate != null && !startDate.trim().isEmpty()) {
             url += "&startDate=" + startDate;
+        }
+        else {
+            //默认开始时间
+            url += "&startDate=" + "1900-01-01";
         }
 
         if (endDate != null && !endDate.trim().isEmpty()) {
@@ -48,8 +52,14 @@ public class FetchNews {
             }
         }
 
-        if (categories != null && !categories.trim().isEmpty()) {
-            url += "&categories=" + categories;
+        if(categories != null && categories.length > 0) {
+            url += "&categories=";
+            for(int i = 0; i < categories.length; i++) {
+                url += categories[i];
+                if (i < categories.length - 1) {
+                    url += ",";
+                }
+            }
         }
 
         url += "&page=" + page;

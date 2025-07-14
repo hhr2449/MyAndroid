@@ -3418,15 +3418,239 @@ icon_clear.setOnClickListener(v -> {
 
 考虑设置一个网格布局，里面放上所有的类别，设置一个对应的adapter，只要点击就会改变颜色（使用之前的效果），然后设置接口回调来传递信息
 
-**adapter**:
+**SearchCategoryAdapte**:
 
-每个对应一个category的标签，内置一个category的数组，含有属性isChoose，表示是否被选择
+用于管理整个网格布局
 
-getView方法中，会根据position来获取对应的数组中的类别，根据isChoose来决定呈现的颜色深浅
+```java
+package com.java.huhaoran;
 
-设置方法setChooseCondition，用于设置isChoose的值，该方法中会改变ui界面，调用接口方法，接口方法应该将一个boolean作为参数，对应的就是isChoose，当true的时候将该标签放入set中，否则移除
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.TextView;
 
-设置点击事件，当点击的时候调用setChooseCondition，将当前的isChoose反转
+import java.util.HashSet;
+
+//回调接口，用于将选择信息传递到主界面
+interface OnCategoryTransferListener {
+    void onCategoryTransfer(String tag, boolean isChoosed);
+}
+
+public class SearchCategoryAdapter extends BaseAdapter {
+
+    private final String[] categories = {"全部", "文化", "娱乐", "军事", "教育", "健康", "财经", "体育", "汽车", "科技", "社会"};
+    //设置是否被选择
+
+    //！！！注意，每个item的isChoose属性都是单独的，不能被其他item所共享，所以这里应该使用一个set，里面放入被选择的item的position
+    HashSet<Integer> selectedPositions;
+    //设置当前的context
+    Context mContext;
+    //接口的对象
+    OnCategoryTransferListener listener;
+
+    class ViewHolder
+    {
+        TextView textView;
+    }
+
+    //设置接口对象
+    public void setOnCategoryTransferListener(OnCategoryTransferListener listener)
+    {
+        this.listener = listener;
+    }
+
+    public SearchCategoryAdapter(Context mContext)
+    {
+        this.mContext = mContext;
+        selectedPositions = new HashSet<>();
+    }
+
+    @Override
+    public int getCount()
+    {
+        return categories.length;
+    }
+
+    @Override
+    public Object getItem(int position)
+    {
+        return categories[position];
+    }
+
+    @Override
+    public long getItemId(int position)
+    {
+        return position;
+    }
+
+    //生成View
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+        //如果没有可以复用的view，就生成一个
+        if(convertView == null) {
+            //生成一个ViewHolder
+            holder = new ViewHolder();
+            //生成view
+            convertView = LayoutInflater.from(mContext).inflate(R.layout.item_search_category, parent, false);
+            //从刚刚生成的view中获取TextView
+            holder.textView = (TextView) convertView.findViewById(R.id.category);
+            //将holder保存在view中
+            convertView.setTag(holder);
+        }
+        else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+        //根据position设置内容
+        holder.textView.setText(categories[position]);
+        //根据选中状态设置背景
+        if(selectedPositions.contains(position)) {
+            if(position == 0) {
+                holder.textView.setBackgroundResource(R.drawable.click_effect3);
+            }
+            else {
+                holder.textView.setBackgroundResource(R.drawable.click_effect2);
+            }
+        }
+        else {
+            holder.textView.setBackgroundResource(R.drawable.click_effect);
+        }
+
+        //设置点击事件
+        holder.textView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean isSelected = selectedPositions.contains(position);
+
+                if (position == 0) {
+                    // 点击“全部”时切换全选状态
+                    if (isSelected) {
+                        // 当前是选中状态，取消所有选择
+                        selectedPositions.clear();
+                    } else {
+                        // 清除其他所有选择，只选中“全部”
+                        selectedPositions.clear();
+                        selectedPositions.add(0);
+                    }
+                    notifyDataSetChanged();
+
+                    // 通知外部更新所有分类的选择状态
+                    if (listener != null) {
+                        for (int i = 1; i < categories.length; i++) {
+                            listener.onCategoryTransfer(categories[i], false); // 取消其他
+                        }
+                        listener.onCategoryTransfer(categories[0], !isSelected); // 更新“全部”
+                    }
+
+                } else {
+                    // 普通分类点击行为
+                    if (isSelected) {
+                        selectedPositions.remove(position);
+                    } else {
+                        selectedPositions.add(position);
+                    }
+
+                    // 若“全部”被选中，取消它
+                    if (selectedPositions.contains(0)) {
+                        selectedPositions.remove(0);
+                    }
+
+                    notifyDataSetChanged();
+
+                    if (listener != null) {
+                        listener.onCategoryTransfer(categories[position], !isSelected);
+                    }
+                }
+            }
+
+        });
+
+        return convertView;
+    }
+}
+```
+
+要生成的item总数就是类别的个数，所以getCount返回categories的长度
+
+维护一个HashSet，里面记录了被选择的类别的position
+
+核心方法：getView，用于生成具体的一个item，首先先检测convertView是否为空，如果不为空进行复用，否则创建一个新的
+
+根据当前的position来决定item上面显示的类别名，然后根据该类别是否被选择来加载标签背景
+
+对于每个标签都要设置一个点击事件，该点击事件会将当前的标签的选择状态进行反转，同时通知ui界面进行改变（加载相反的背景），同时设置了一个回调接口，该类持有该接口的对象引用，可以通过方法进行传入，而接口内方法的定义放在activity中做，这样就可以访问activity中的数据，这里设定接口中的方法会根据传入的参数来对activity的类别集合中的项进行删除或者添加，从而实现点击事件能够操控activity中的集合
+
+
+
+#### 按照时间进行搜索
+
+如果直接使用DatePicker，展示效果不好，获取数据麻烦，所以考虑在页面中创建两个文本框，设置点击事件，只要点击就会弹出日期选择框提示用户进行选择
+
+```java
+private void showDatePickerDialog(boolean isStartDate) {
+    //获取当前的年，月，日
+    int year = calendar.get(Calendar.YEAR);
+    int month = calendar.get(Calendar.MONTH);
+    int day = calendar.get(Calendar.DAY_OF_MONTH);
+    //定义了一个DatePickerDialog控件
+    //参数依次是：上下文，监听，默认年，月，日
+    //监听器就是点击了日历中的确定会执行的代码
+    //监听器的参数是当前的DatePicker对象，选择的年，月，日
+    DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year1, month1, dayOfMonth) -> {
+        //获取日期字符串，这里将年，月，日格式化为4位，2位，2位
+        //注意月是0-11，所以要加1
+        String date = String.format(Locale.getDefault(), "%04d-%02d-%02d", year1, month1 + 1, dayOfMonth);
+        //更新文本框
+        if (isStartDate) {
+            if(searchData.getEndDate() != null) {
+                //如果结束日期不为空，则判断是否大于开始日期
+                if(dateCompare(date, searchData.getEndDate()) > 0) {
+                    //如果更大，则弹出提示
+                    Toast.makeText(SearchActivity.this, "开始日期不能大于结束日期", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+            textStartDate.setText(date);
+            searchData.setStartDate(date);
+        } else {
+            if(searchData.getStartDate() != null) {
+                //如果开始日期不为空，则判断是否小于开始日期
+                if(dateCompare(date, searchData.getStartDate()) < 0) {
+                    //如果更小，则弹出提示
+                    Toast.makeText(SearchActivity.this, "结束日期不能小于开始日期", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+            textEndDate.setText(date);
+            searchData.setEndDate(date);
+        }
+    }, year, month, day);
+
+    // 防止用户选未来
+    datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+
+
+    //展示日历
+    datePickerDialog.show();
+}
+```
+
+
+
+这个是显示日历并且进行选择的方法，关键在于构造了一个 DatePickerDialog类的对象，参数依次是上下文，日期选择监听器，默认的年、月、日，监听器是用户点击日历的确认之后会执行的代码，参数依次是当前日期选择器的对象，用户选择的年、月、日，这里就是将用户选择的年、月、日打在文本框里，同时进行储存即可，注意要处理一些错误选择
+
+此时只是构造了一个DatePickerDialog的对象，需要调用show方法来展现出日历来
+
+最后设置文本框的点击事件，设定为点击后就执行showDatePickerDialog，该方法就会生成我们刚刚设定好的DatePickerDialog对象，并且将其展示出来
+
+
+
+#### 搜索结果界面
+
+
 
 
 

@@ -4,9 +4,13 @@ import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 //这是一个专门用于管理和储存搜索数据的类，方便进行传递和储存,同时封装了一些用于管理数据的方法
@@ -88,4 +92,17 @@ public class SearchData implements Serializable {
                 ", endDate='" + endDate + '\'' +
                 '}';
     }
+
+    public static List<String> simpleChineseSegment(String text) {
+        List<String> result = new ArrayList<>();
+        if (text == null || text.trim().isEmpty()) return result;
+
+        // 正则匹配中文或英文单词或数字
+        Matcher matcher = Pattern.compile("[\\u4e00-\\u9fa5]+|[a-zA-Z0-9]+").matcher(text.trim());
+        while (matcher.find()) {
+            result.add(matcher.group());
+        }
+        return result;
+    }
+
 }

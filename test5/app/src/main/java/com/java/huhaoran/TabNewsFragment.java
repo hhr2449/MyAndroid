@@ -64,7 +64,7 @@ public class TabNewsFragment extends Fragment {
     }
 
     //----------------------------该类用于实现RecyclerView的分割线-----------------------
-    class SimpleDividerDecoration extends RecyclerView.ItemDecoration {
+    static class SimpleDividerDecoration extends RecyclerView.ItemDecoration {
 
         private int dividerHeight;
         private Paint dividerPaint;
@@ -144,7 +144,7 @@ public class TabNewsFragment extends Fragment {
             currentPage++;
             //开线程请求数据
             String title_tmp = title.equals("全部") ? "" : title;
-            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1900-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "1900-01-01", "", new String[]{}, new String[]{title_tmp}, String.valueOf(currentPage)); // 使用 currentPage
 
 
             if (response != null && response.data != null&& !response.data.isEmpty()) {
@@ -194,7 +194,7 @@ public class TabNewsFragment extends Fragment {
 
         new Thread(() -> {
             String title_tmp = title.equals("全部") ? "" : title;
-            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+            FetchNews.NewsResponse response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, new String[]{title_tmp}, String.valueOf(currentPage)); // 使用 currentPage
 
 
             if (response != null && response.data != null&& !response.data.isEmpty()) {
@@ -209,7 +209,7 @@ public class TabNewsFragment extends Fragment {
                     newDayPageLimit = max(currentPage, newDayPageLimit);
                 } else {
                     currentPage = (int)(Math.random()*newDayPageLimit+1);
-                    response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, title_tmp, String.valueOf(currentPage)); // 使用 currentPage
+                    response = FetchNews.fetchNews("10", "2000-01-01", "", new String[]{}, new String[]{title_tmp}, String.valueOf(currentPage)); // 使用 currentPage
                 }
                 currentPage++;
                 List<FetchNews.NewsItem> newslist = response.data;

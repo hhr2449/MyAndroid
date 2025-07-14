@@ -37,10 +37,21 @@ public class SearchCategoryAdapter extends BaseAdapter {
         this.listener = listener;
     }
 
-    public SearchCategoryAdapter(Context mContext)
+    public SearchCategoryAdapter(Context mContext, boolean fromResult, HashSet<String> selectedCategories)
     {
         this.mContext = mContext;
+        //如果是从搜索结果界面返回，则遍历搜索结果中的分类信息，将搜索结果中的分类信息设置为已选择
         selectedPositions = new HashSet<>();
+        if(fromResult) {
+            for(String category : selectedCategories) {
+                for(int i = 0; i < categories.length; i++) {
+                    if(categories[i].equals(category)) {
+                        selectedPositions.add(i);
+                    }
+                }
+            }
+        }
+
     }
 
     @Override
