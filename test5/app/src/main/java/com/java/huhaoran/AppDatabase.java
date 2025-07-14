@@ -11,11 +11,13 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.java.huhaoran.Dao.SummaryDao;
+import com.java.huhaoran.note.BrowseHistoryNote;
+import com.java.huhaoran.note.SearchHistoryNote;
 import com.java.huhaoran.note.SummaryNote;
 
 import java.util.concurrent.Executors;
 
-@Database(entities = {SummaryNote.class}, version = 1, exportSchema = false)
+@Database(entities = {SummaryNote.class, SearchHistoryNote.class, BrowseHistoryNote.class}, version = 1, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase{
     //用于获取实体类对应的Dao对象的方法
     public abstract SummaryDao summaryDao();

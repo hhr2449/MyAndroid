@@ -1807,7 +1807,7 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
       4. 当需要展示页面的时候，系统会自动调用`onCreate`,`onCreateView`,`onViewCreated`,onCreate获取参数，OnCreateView用于初始化fragment的样式，onViewCreate用于加载RecyclerView
          1. 在onViewCreate中，首先创建一个RecyclerView类的对象
          2. 然后开一个线程获取新闻列表
-         3. 最后使用新闻列表构造Adapter,并且将这个Adapter绑定到RecyclerView类的对象，从而实现页面的创建
+         3. 最后使用新闻列表构造Adapter,并且将这个Adapter绑定到RecyclerView类的对象，再创建`recyclerView.setLayoutManager(new LinearLayoutManager(this));`用于管理item的摆放从而实现页面的创建
 
 3. 为了实现主题的切换，我们创建了一个TabLayoutMediator，用于TabLayout和ViewPager2的同步，创建过程如下：
 
@@ -1885,8 +1885,17 @@ public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceStat
 
    1. 创建出RecyclerView类的对象，作为页面展示容器
    2. 开一个线程，调用fetchNews(title)方法，获取新闻列表
-   3. 构造RecyclerView的Adapter，并且绑定，实现页面的展示
+   3. 构造RecyclerView的Adapter，并且绑定，再绑定LayoutManager实现页面的展示
 
+   
+   
+   对于一个RecyclerView，需要两个东西，一个是Adapter，用于告诉RecyclerView第position个item是什么样的，另一个是LayoutManager，用于告诉`RecyclerView`item应该如何摆放
+   
+   ```java
+   recyclerView.setLayoutManager(new LinearLayoutManager(this));
+   recyclerView.setAdapter(newsAdapter);
+   ```
+   
    
 
 
@@ -3650,7 +3659,330 @@ private void showDatePickerDialog(boolean isStartDate) {
 
 #### 搜索结果界面
 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    tools:context=".SearchResultActivity">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
 
+        <!-- 返回按钮 -->
+        <ImageView
+            android:id="@+id/back_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/back_with_angle"
+            android:contentDescription="Back"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <!-- 搜索输入框区域 -->
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:id="@+id/search_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:textColor="#000000"
+                android:background="@drawable/grey_rounded_bigger_radius"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp"
+                android:textSize="16sp"
+                android:gravity="center_vertical"
+                android:singleLine="true" />
+
+            <!-- 搜索图标 -->
+            <ImageView
+                android:id="@+id/icon_search"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="12dp"
+                android:src="@drawable/search_icon"
+                android:contentDescription="Search Icon" />
+
+        </RelativeLayout>
+
+        <!-- 搜索文字按钮 -->
+        <TextView
+            android:id="@+id/btn_search_text"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="搜索"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:paddingHorizontal="16dp"
+            android:background="@drawable/red_rounded_button" />
+    </LinearLayout>
+
+    <!-- 搜索摘要信息 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="8dp">
+
+        <!-- 搜索类别 -->
+        <TextView
+            android:id="@+id/search_category_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingBottom="2dp"/>
+
+        <!-- 搜索时间范围 -->
+        <TextView
+            android:id="@+id/search_time_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"/>
+    </LinearLayout>
+
+
+
+    <com.scwang.smart.refresh.layout.SmartRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/refreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <com.scwang.smart.refresh.header.BezierRadarHeader
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/news_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp"/>
+        <com.scwang.smart.refresh.footer.BallPulseFooter
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </com.scwang.smart.refresh.layout.SmartRefreshLayout>
+
+
+
+</androidx.appcompat.widget.LinearLayoutCompat>
+```
+
+顶部有一个搜索栏，用于显示搜索的用户输入，下方用小字注明搜索类别和时间
+
+点击搜索栏会返回到搜索界面，同时会保留之前的输入和类别选择
+
+主要部分是一个SmartRefresh，用来进行刷新和获取更多，里面嵌套了一个RecyclerView用于展示新闻列表
+
+结果界面对应的文件中，会获取搜索界面传过来的搜索数据
+
+```java
+private void getSearchData() {
+    //获取搜索数据
+    searchData = (SearchData) getIntent().getSerializableExtra("searchData");
+    //做判空处理
+    if(searchData == null) {
+        keywords = new String[]{};
+        categories = new String[0];
+        startDate = null;
+        endDate = null;
+    }
+    //用户的输入
+    String rawKeywords = searchData.getKeyword();
+    if (rawKeywords != null && !rawKeywords.trim().isEmpty()) {
+        keywords = SearchData.simpleChineseSegment(rawKeywords).toArray(new String[0]);
+    } else {
+        keywords = new String[]{};
+    }
+
+    //类别
+    if(searchData.getCategories() != null) {
+        categories = searchData.getCategories().toArray(new String[0]);
+        if(categories.length == 1 && categories[0].equals("全部")) {
+            categories = null;
+        }
+    }
+    else {
+        categories = null;
+    }
+
+    if(searchData.getStartDate() == null) {
+        startDate = "";
+    }
+    else {
+        startDate = searchData.getStartDate();
+    }
+
+    if (searchData.getEndDate() == null) {
+        endDate = "";
+    }
+    else {
+        endDate = searchData.getEndDate();
+    }
+}
+```
+
+
+
+recyclerView的adapter重用了之前主界面的NewsAdapter，这个adapter可以接受一个放了新闻对象的list，可以实现新闻数据的增加和更新，同时改变ui界面，还实现了item点击事件的注册，可以进行跳转详情页
+
+这里构造了一个空的NewsAdapter并且设置再该页面的recyclerView上，然后构造了一个LayoutManager用于管理item的位置，并且设置了分割线
+
+```java
+newsAdapter = new NewsAdapter(new ArrayList<>());
+recyclerView.setLayoutManager(new LinearLayoutManager(this));
+recyclerView.setAdapter(newsAdapter);
+recyclerView.addItemDecoration(new TabNewsFragment.SimpleDividerDecoration(this));
+```
+
+仿造之前的新闻列表，实现了加载和刷新
+
+```java
+private void loadMoreNewsData() {
+    // 防止重复加载
+    if (isLoading) return;
+    isLoading = true;
+
+
+    // 从网络请求下一页数据
+    new Thread(() -> {
+        // 递增页码
+        currentPage++;
+        FetchNews.NewsResponse response = FetchNews.fetchNews("10", startDate, endDate, keywords, categories, String.valueOf(currentPage)); // 使用 currentPage
+
+        if (response != null && response.data != null&& !response.data.isEmpty()) {
+            String time[] = response.data.get(0).publishTime.split(" ");
+            if(newDay != null &&newDay.equals(time[0])) {
+                newDayPageLimit = max(newDayPageLimit, currentPage);
+            }
+            List<FetchNews.NewsItem> newslist = response.data;
+
+            //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
+            runOnUiThread(() -> {
+                // RecyclerView 相关更新
+                newsAdapter.appendData(newslist);
+                RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                refreshLayout.finishLoadMore(); // 或 finishRefresh()
+                isLoading = false;
+            });
+        } else {
+            //没有更多数据了
+            runOnUiThread(() -> {
+                Toast.makeText(SearchResultActivity.this, "没有更多新闻了", Toast.LENGTH_SHORT).show();
+                RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                refreshLayout.finishLoadMore(); // 或 finishRefresh()
+                isLoading = false;
+            });
+
+        }
+    }).start();
+}
+
+
+//刷新数据
+//更新了刷新逻辑，如果每次刷新都回到第一页的话显得重复，效果不好
+//所以我记录了有当前日期新闻的界面，如果刷新时的page是当天的新闻，则获取下一页
+//如果不是，则回到有当前日期新闻的随机一页
+
+private void loadNewsData(boolean isRefresh) {
+    // 防止重复加载
+    if (isLoading) return;
+    isLoading = true;
+
+    new Thread(() -> {
+        FetchNews.NewsResponse response = FetchNews.fetchNews("10", startDate, endDate, keywords, categories, String.valueOf(currentPage)); // 使用 currentPage
+
+
+        if (response != null && response.data != null&& !response.data.isEmpty()) {
+
+            String time[] = response.data.get(0).publishTime.split(" ");
+            if(currentPage == 1) {
+                newDay = time[0];
+            }
+
+
+            if(newDay != null && newDay.equals(time[0])) {
+                newDayPageLimit = max(currentPage, newDayPageLimit);
+            } else {
+                currentPage = (int)(Math.random()*newDayPageLimit+1);
+                response = FetchNews.fetchNews("10", startDate, endDate, keywords, categories, String.valueOf(currentPage)); // 使用 currentPage
+            }
+            currentPage++;
+            List<FetchNews.NewsItem> newslist = response.data;
+
+            runOnUiThread(() -> {
+                // RecyclerView 相关更新
+                newsAdapter.updateData(newslist);
+                RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                if (isRefresh) {
+                    refreshLayout.finishRefresh();
+                } else {
+                    refreshLayout.finishLoadMore();
+                }
+                isLoading = false;
+            });
+        } else {
+            runOnUiThread(() -> {
+                Toast.makeText(SearchResultActivity.this, "没有更多新闻了", Toast.LENGTH_SHORT).show();
+                isLoading = false;
+                RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                if (isRefresh) {
+                    refreshLayout.finishRefresh();
+                } else {
+                    refreshLayout.finishLoadMore();
+                }
+            });
+        }
+    }).start();
+}
+```
+
+思路就是调用FetchNews来获取新闻列表，对adapetr进行添加或者更新
+
+初始化上下拉的监听器，分别调用两个方法
+
+```java
+private void initRefreshLayout() {
+    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+
+    // 下拉刷新
+    refreshLayout.setOnRefreshListener(refreshlayout -> {
+        loadNewsData(true); // 加载第一页
+    });
+
+    // 上拉加载更多
+    refreshLayout.setOnLoadMoreListener(refreshlayout -> {
+        // 加载下一页
+        loadMoreNewsData();
+    });
+}
+```
+
+在oncreate方法中注册监听器，并且调用刷新方法来获得初始的列表
+
+```java
+initRefreshLayout();
+loadNewsData(true);
+```
 
 
 
