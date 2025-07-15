@@ -232,7 +232,7 @@ public class SearchResultActivity extends AppCompatActivity {
         isLoading = true;
 
         new Thread(() -> {
-            FetchNews.NewsResponse response = FetchNews.fetchNews("10", startDate, endDate, keywords, categories, String.valueOf(currentPage)); // 使用 currentPage
+            FetchNews.NewsResponse response = FetchNews.fetchNews( "10", startDate, endDate, keywords, categories, String.valueOf(currentPage)); // 使用 currentPage
 
 
             if (response != null && response.data != null&& !response.data.isEmpty()) {

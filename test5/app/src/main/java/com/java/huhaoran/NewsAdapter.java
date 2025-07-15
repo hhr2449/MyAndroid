@@ -18,6 +18,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.java.huhaoran.note.BrowseHistoryNote;
 
+import java.util.HashSet;
 import java.util.List;
 
 
@@ -30,9 +31,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     private static final int TYPE_WITH_ONEIMAGE = 1;
     private static final int TYPE_WITH_TWOIMAGE = 2;
     private static final int TYPE_WITH_THREEIMAGE = 3;
-    //该条新闻是否点过赞或是收藏
-    private boolean isLike = false;
-    private boolean isFavor = false;
     //构造函数将列表传入
     public NewsAdapter(List<FetchNews.NewsItem> newslist) {
         this.newslist = newslist;
@@ -167,8 +165,8 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         //如果点过赞或是有过收藏，要改变图标
         //注意子线程中不能改变ui
         new Thread(() -> {
-            isLike = db.likeDao().existsByTitle(newslist.get(position).title);
-            isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
+            boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title);
+            boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
             holder.itemView.post(() -> {
                 if(isLike) {
                     holder.like.setImageResource(R.drawable.like_light);
@@ -184,9 +182,9 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
                     holder.favor.setImageResource(R.drawable.favor_dark);
                 }
             });
-        });
+        }).start();
 
-        //不设置点击事件，只做展示使用（因为太麻烦了）
+        //不设置点击事件，只做展示使用（因为太麻烦了,如果可以的话可能会出现有收藏无浏览的情况，这样的情况下就必须在HistoryItemAdater中进行入库操作）
 
 
         //设置点击事件监听，点击列表可以跳转到对应的新闻详情页面
@@ -234,4 +232,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         this.newslist.addAll(newData);
         notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
     }
+
+
 }

@@ -9,6 +9,7 @@ import androidx.room.Update;
 
 import com.java.huhaoran.note.BrowseHistoryNote;
 import com.java.huhaoran.note.SearchHistoryNote;
+import com.java.huhaoran.note.SummaryNote;
 
 import java.util.List;
 
@@ -16,6 +17,10 @@ import java.util.List;
 public interface BrowseHistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(BrowseHistoryNote note);
+    default String insertAndReturnTitle(BrowseHistoryNote note) {
+        insert(note);
+        return note.getTitle();
+    }
 
     //更新
     @Update
@@ -43,5 +48,8 @@ public interface BrowseHistoryDao {
 
     @Query("SELECT * FROM browseHistory ORDER BY time DESC LIMIT :limit OFFSET :offset")
     List<BrowseHistoryNote> getBrowseHistoryPage(int limit, int offset);
+
+    @Query("SELECT title FROM browseHistory")
+    List<String> getAllReadTitles();
 
 }

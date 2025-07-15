@@ -74,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 } else if (id == R.id.nav_favorites) {
                     // 处理收藏夹逻辑
+                    Intent intent2 = new Intent(MainActivity.this, FavoritesHistoryActivity.class);
+                    startActivity(intent2);
                 } else if (id == R.id.nav_password) {
                     // 处理密码管理逻辑
                 } else if (id == R.id.nav_logout) {
@@ -254,6 +256,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     //-------------------同步标签----------------------------
+
+
 
 
 

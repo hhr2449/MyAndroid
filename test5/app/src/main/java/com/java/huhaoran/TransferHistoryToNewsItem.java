@@ -1,6 +1,7 @@
 package com.java.huhaoran;
 
 import com.java.huhaoran.note.BrowseHistoryNote;
+import com.java.huhaoran.note.FavoritesHistoryNote;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,26 @@ public class TransferHistoryToNewsItem {
             newsItem.category = browseHistoryNote.category;
             newsItem.image = browseHistoryNote.image;
             newsItem.video = browseHistoryNote.video;
+            newsItems.add(newsItem);
+        }
+        return newsItems;
+    }
+
+    public static List<FetchNews.NewsItem> transfer2(List<FavoritesHistoryNote> favoritesHistoryNotes) {
+        if(favoritesHistoryNotes == null) {
+            return null;
+        }
+        //创建一个新闻对象列表
+        List<FetchNews.NewsItem> newsItems = new ArrayList<>();
+        //遍历表单，转换为新闻对象
+        for(FavoritesHistoryNote favotitesHistoryNote : favoritesHistoryNotes) {
+            FetchNews.NewsItem newsItem = new FetchNews.NewsItem();
+            newsItem.title = favotitesHistoryNote.title;
+            newsItem.publishTime = favotitesHistoryNote.publishTime;
+            newsItem.content = favotitesHistoryNote.content;
+            newsItem.publisher = favotitesHistoryNote.publisher;
+            newsItem.image = favotitesHistoryNote.image;
+            newsItem.video = favotitesHistoryNote.video;
             newsItems.add(newsItem);
         }
         return newsItems;

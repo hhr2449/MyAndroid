@@ -1,6 +1,7 @@
 package com.java.huhaoran.note;
 
 
+import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
@@ -9,10 +10,9 @@ import androidx.room.PrimaryKey;
 //其实和浏览历史的表单结构一样，只是为了方便区分
 @Entity(tableName = "favoritesHistory")
 public class FavoritesHistoryNote {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
 
-    @ColumnInfo(name = "title")
+    @PrimaryKey
+    @NonNull
     public String title;
     @ColumnInfo(name = "url")
     public String publishTime;
@@ -36,5 +36,9 @@ public class FavoritesHistoryNote {
         this.image = new String(image);
         this.video = new String(video);
         this.time = time;
+    }
+
+    public String getTitle() {
+        return title;
     }
 }

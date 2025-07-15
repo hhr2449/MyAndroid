@@ -28,4 +28,6 @@ public interface LikeDao {
     @Query("SELECT EXISTS(SELECT 1 FROM likeNote WHERE title = :title)")
     boolean existsByTitle(String title);
 
+    @Query("SELECT title FROM likeNote")
+    List<String> getAllLikedTitles();
 }

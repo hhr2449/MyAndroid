@@ -1,15 +1,17 @@
 package com.java.huhaoran.note;
 
+import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "browseHistory")
 public class BrowseHistoryNote {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
 
-    @ColumnInfo(name = "title")
+
+    //注意这里将主键设置为title，并且将插入规则设置为替代，这样数据库中智慧留存一条最近的记录，不会出现多次浏览出现多条记录
+    @PrimaryKey
+    @NonNull
     public String title;
     @ColumnInfo(name = "url")
     public String publishTime;
@@ -37,5 +39,9 @@ public class BrowseHistoryNote {
         this.image = new String(image);
         this.video = new String(video);
         this.time = time;
+    }
+
+    public String getTitle() {
+        return title;
     }
 }

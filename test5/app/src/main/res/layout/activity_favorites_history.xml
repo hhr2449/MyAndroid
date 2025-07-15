@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    tools:context=".BrowseHistoryActivity">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <!-- 返回按钮 -->
+            <ImageView
+                android:id="@+id/back_button_favorites"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/back_with_angle"
+                android:contentDescription="Back"
+                android:padding="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="收藏记录"
+                android:textColor="#333333"
+                android:textSize="18sp"
+                android:layout_centerInParent="true"
+                android:maxLines="1"/>
+
+        </RelativeLayout>
+
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/clear_button_favorites"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:layout_marginRight="90sp"
+            android:layout_alignParentRight="true"
+            android:layout_gravity="right"
+            android:textColor="@color/red"
+            android:text="清空"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/delete_button_favorites"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:layout_marginRight="20sp"
+            android:layout_alignParentRight="true"
+            android:layout_gravity="right"
+            android:textColor="@color/red"
+            android:text="编辑"
+            android:textSize="18sp" />
+
+
+
+    </RelativeLayout>
+
+
+
+
+    <com.scwang.smart.refresh.layout.SmartRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/refreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/favorites_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp"/>
+        <com.scwang.smart.refresh.footer.BallPulseFooter
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </com.scwang.smart.refresh.layout.SmartRefreshLayout>
+
+
+
+</androidx.appcompat.widget.LinearLayoutCompat>

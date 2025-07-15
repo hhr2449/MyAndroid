@@ -17,6 +17,10 @@ import java.util.List;
 public interface FavoritesHistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(FavoritesHistoryNote note);
+    default String insertAndReturnTitle(FavoritesHistoryNote note) {
+        insert(note);
+        return note.getTitle();
+    }
 
     //更新
     @Update
@@ -48,4 +52,7 @@ public interface FavoritesHistoryDao {
 
     @Query("SELECT * FROM favoritesHistory ORDER BY time DESC LIMIT :limit OFFSET :offset")
     List<FavoritesHistoryNote> getFavoritesHistoryPage(int limit, int offset);
+
+    @Query("SELECT title FROM favoritesHistory")
+    List<String> getAllFavoredTitles();
 }
