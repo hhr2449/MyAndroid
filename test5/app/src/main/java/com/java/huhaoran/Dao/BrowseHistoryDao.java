@@ -25,6 +25,14 @@ public interface BrowseHistoryDao {
     @Delete
     void delete(BrowseHistoryNote paramBrowseHistoryNote);
 
+    //批量删除
+    @Query("DELETE FROM browseHistory WHERE title IN (:titles)")
+    void deleteByTitles(List<String> titles);
+
+    @Query("DELETE FROM browseHistory")
+    void deleteAll();
+
+
     //按照title查询
     @Query("SELECT * FROM browseHistory WHERE title = :title")
     BrowseHistoryNote queryByTitle(String title);

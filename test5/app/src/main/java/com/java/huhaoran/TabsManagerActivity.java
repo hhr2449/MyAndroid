@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,8 +42,9 @@ public class TabsManagerActivity extends AppCompatActivity {
         gridTop.setAdapter(titlesAdapter);
         titlesNoUseAdapter = new TitlesNoUseAdapter(this, titlesNoUse, editMode);
         gridBottom.setAdapter(titlesNoUseAdapter);
+        ImageView btn_back = findViewById(R.id.btn_back);
         //设置点击事件，点击可以切换编辑模式（editMode取反），并切换按钮文字
-        Button button = findViewById(R.id.btn_ok);
+        TextView button = findViewById(R.id.btn_ok);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -51,7 +53,12 @@ public class TabsManagerActivity extends AppCompatActivity {
                 button.setText(mode[modeIndex]);
                 titlesAdapter.setEditMode(editMode);
                 titlesNoUseAdapter.setEditMode(editMode);
-
+                if(editMode) {
+                    btn_back.setVisibility(View.GONE);
+                }
+                else {
+                    btn_back.setVisibility(View.VISIBLE);
+                }
             }
         });
         //在Activity中定义两个Adapter中的接口，实现交互
@@ -77,7 +84,7 @@ public class TabsManagerActivity extends AppCompatActivity {
             }
         });
         //设置返回键
-        ImageView btn_back = findViewById(R.id.btn_back);
+
         btn_back.setOnClickListener(v -> {
             //设置在关闭页面时保存数据
             titles = new ArrayList<>(titlesAdapter.titles);

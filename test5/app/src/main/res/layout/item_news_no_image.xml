@@ -60,30 +60,20 @@
 
             <!-- 点赞 -->
             <ImageView
+                android:id="@+id/like"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:src="@drawable/like" />
-            <TextView
-                android:id="@+id/like"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="121300"
-                android:textColor="#928D8D"
-                android:textSize="12sp" />
+                android:src="@drawable/like_dark" />
+
 
             <!-- 收藏 -->
             <ImageView
+                android:id="@+id/favor"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:src="@drawable/collection"
+                android:src="@drawable/favor_dark"
                 android:layout_marginLeft="10dp" />
-            <TextView
-                android:id="@+id/collection"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1000000"
-                android:textColor="#928D8D"
-                android:textSize="12sp" />
+
 
             <!-- 更多 -->
             <ImageView

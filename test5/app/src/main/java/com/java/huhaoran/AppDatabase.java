@@ -11,20 +11,26 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.java.huhaoran.Dao.BrowseHistoryDao;
+import com.java.huhaoran.Dao.FavoritesHistoryDao;
+import com.java.huhaoran.Dao.LikeDao;
 import com.java.huhaoran.Dao.SearchHistoryDao;
 import com.java.huhaoran.Dao.SummaryDao;
 import com.java.huhaoran.note.BrowseHistoryNote;
+import com.java.huhaoran.note.FavoritesHistoryNote;
+import com.java.huhaoran.note.LikeNote;
 import com.java.huhaoran.note.SearchHistoryNote;
 import com.java.huhaoran.note.SummaryNote;
 
 import java.util.concurrent.Executors;
 
-@Database(entities = {SummaryNote.class, SearchHistoryNote.class, BrowseHistoryNote.class}, version = 1, exportSchema = false)
+@Database(entities = {SummaryNote.class, SearchHistoryNote.class, BrowseHistoryNote.class, FavoritesHistoryNote.class, LikeNote.class}, version = 1, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase{
     //用于获取实体类对应的Dao对象的方法
     public abstract SummaryDao summaryDao();
     public abstract SearchHistoryDao searchHistoryDao();
     public abstract BrowseHistoryDao browseHistoryDao();
+    public abstract FavoritesHistoryDao favoritesHistoryDao();
+    public abstract LikeDao likeDao();
 
     //单例对象
     private static volatile AppDatabase INSTANCE;

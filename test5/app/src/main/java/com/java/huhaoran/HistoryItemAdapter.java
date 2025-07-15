@@ -2,9 +2,9 @@ package com.java.huhaoran;
 
 import static com.java.huhaoran.FetchNews.getLinks;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,38 +15,45 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
 import com.java.huhaoran.note.BrowseHistoryNote;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 //定义RecyclerView的适配器
-public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder>{
+//这个是history_item_adapter
+public class HistoryItemAdapter extends RecyclerView.Adapter<HistoryItemAdapter.HistoryViewHolder>{
     //成员变量是新闻列表
     private List<FetchNews.NewsItem> newslist;
+    //用于显示是否启用编辑图标
+    boolean editMode;
+    Context mContext;
     //定义常量用于表示item类型
+    //定义一个HashSet用于保存要删除的新闻的标题
+    HashSet<String> titlesRemove;
     private static final int TYPE_NO_IMAGE = 0;
     private static final int TYPE_WITH_ONEIMAGE = 1;
     private static final int TYPE_WITH_TWOIMAGE = 2;
     private static final int TYPE_WITH_THREEIMAGE = 3;
-    //该条新闻是否点过赞或是收藏
-    private boolean isLike = false;
-    private boolean isFavor = false;
     //构造函数将列表传入
-    public NewsAdapter(List<FetchNews.NewsItem> newslist) {
+    public HistoryItemAdapter(List<FetchNews.NewsItem> newslist , boolean editMode, Context mContext ) {
+        this.editMode = editMode;
+        this.mContext = mContext;
         this.newslist = newslist;
+        titlesRemove = new HashSet<>();
     }
     //创建ViewHolder
-    static class NewsViewHolder extends RecyclerView.ViewHolder {
+    static class HistoryViewHolder extends RecyclerView.ViewHolder {
         RelativeLayout itemView;
         //成员变量就是一条item中每个控件的引用
         TextView title, publisher, time;
         ImageView image1, image2, image3;
-        //点赞和收藏的图标
-        ImageView like, favor;
         //ViewHolder类同样也有支持item类型的构造函数
-        public NewsViewHolder(View view, int type) {
+        ImageView like, favor;
+        public HistoryViewHolder(View view, int type) {
             super(view);
             itemView = view.findViewById(R.id.item_view);
             title = (TextView) view.findViewById(R.id.title);
@@ -97,7 +104,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
 
     //创建ViewHolder，这里提供了viewType参数，这个参数表示当前item的类型
     @Override
-    public NewsViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public HistoryViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         //创建item的布局,inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean attachToRoot)
         //参数：要使用的布局文件，父布局，是否将布局文件添加为父布局的子元素
         View view = null;
@@ -105,25 +112,25 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             case TYPE_NO_IMAGE:
                 view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_no_image, parent, false);
                 break;
-                case TYPE_WITH_ONEIMAGE:
-                    view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_oneimage, parent, false);
-                    break;
-                    case TYPE_WITH_TWOIMAGE:
-                        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_twoimage, parent, false);
-                        break;
-                        case TYPE_WITH_THREEIMAGE:
-                            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_threeimage, parent, false);
-                            break;
+            case TYPE_WITH_ONEIMAGE:
+                view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_oneimage, parent, false);
+                break;
+            case TYPE_WITH_TWOIMAGE:
+                view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_twoimage, parent, false);
+                break;
+            case TYPE_WITH_THREEIMAGE:
+                view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_news_threeimage, parent, false);
+                break;
         }
 
-        NewsViewHolder holder = new NewsViewHolder(view, viewType);
+        HistoryViewHolder holder = new HistoryViewHolder(view, viewType);
         return holder;
     }
 
 
     //为item设置内容,holder是当前item的ViewHolder,position是当前item的位置
     @Override
-    public void onBindViewHolder(NewsViewHolder holder, int position) {
+    public void onBindViewHolder(HistoryViewHolder holder, int position) {
         //获取需要的那条新闻
         FetchNews.NewsItem newsitem = newslist.get(position);
         holder.title.setText(newsitem.title);
@@ -151,57 +158,43 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             e.printStackTrace();
 
         }
-        //如果已经读过该新闻（记录了对应的title），则字体显示灰色
-        AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
-        new Thread(() -> {
-            boolean isRead = db.browseHistoryDao().existsByTitle(newslist.get(position).title);
-            holder.itemView.post(() -> {
-                if (isRead) {
-                    holder.title.setTextColor(Color.parseColor("#8E8B8B"));
-                }
-                else {
-                    holder.title.setTextColor(Color.parseColor("#000000"));
-                }
-            });
-        }).start();
-        //如果点过赞或是有过收藏，要改变图标
-        //注意子线程中不能改变ui
-        new Thread(() -> {
-            isLike = db.likeDao().existsByTitle(newslist.get(position).title);
-            isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
-            holder.itemView.post(() -> {
-                if(isLike) {
-                    holder.like.setImageResource(R.drawable.like_light);
-                }
-                else {
-                    holder.like.setImageResource(R.drawable.like_dark);
-                }
 
-                if(isFavor) {
-                    holder.favor.setImageResource(R.drawable.favor_light);
-                }
-                else {
-                    holder.favor.setImageResource(R.drawable.favor_dark);
-                }
-            });
+        AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
+        //如果点过赞或是有过收藏，要改变图标
+        new Thread(() -> {
+            boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title);
+            boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
+            if(isLike) {
+                holder.like.setImageResource(R.drawable.like_light);
+            }
+            else {
+                holder.like.setImageResource(R.drawable.like_dark);
+            }
+
+            if(isFavor) {
+                holder.favor.setImageResource(R.drawable.favor_light);
+            }
+            else {
+                holder.favor.setImageResource(R.drawable.favor_dark);
+            }
         });
 
-        //不设置点击事件，只做展示使用（因为太麻烦了）
-
-
-        //设置点击事件监听，点击列表可以跳转到对应的新闻详情页面
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //记录浏览过的新闻
-                AppDatabase db = AppDatabase.getInstance(v.getContext());
-                new Thread(() -> {
-                    BrowseHistoryNote note = new BrowseHistoryNote(newsitem.title, newsitem.publishTime, newsitem.content, newsitem.publisher, newsitem.category, newsitem.image, newsitem.video, System.currentTimeMillis());
-                    db.browseHistoryDao().insert(note);
-                }).start();
-                //改变颜色
-                holder.title.setTextColor(Color.parseColor("#8E8B8B"));
-                //跳转页面
+        //设置点击事件监听，非编辑模式点击列表可以跳转到对应的新闻详情页面
+        //如果处于编辑模式，则设置点击事件，点击某一条新闻,如果未被选中，则会变成深色，并且加入删除列表，否则则变成浅色，并且从删除列表中删除
+        if (editMode) {
+            holder.itemView.setOnClickListener(v -> {
+                if (titlesRemove.contains(newsitem.title)) {
+                    holder.itemView.setBackgroundColor(Color.parseColor("#FFFFFFFF")); // 未选中
+                    titlesRemove.remove(newsitem.title);
+                } else {
+                    holder.itemView.setBackgroundColor(Color.parseColor("#FFEEEEEE")); // 被选中
+                    titlesRemove.add(newsitem.title);
+                }
+            });
+        } else {
+            holder.itemView.setBackgroundColor(Color.WHITE); // 恢复颜色
+            holder.itemView.setOnClickListener(v -> {
+                // 跳转详情页
                 Intent intent = new Intent(v.getContext(), NewsDetailActivity.class);
                 intent.putExtra("title", newsitem.title);
                 intent.putExtra("content", newsitem.content);
@@ -210,8 +203,10 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
                 intent.putExtra("publishTime", newsitem.publishTime);
                 intent.putExtra("video", newsitem.video);
                 v.getContext().startActivity(intent);
-            }
-        });
+            });
+        }
+
+
 
     }
     //获取item的总数
@@ -234,4 +229,31 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         this.newslist.addAll(newData);
         notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
     }
+
+    //设置编辑模式
+    public void setEditMode(boolean editMode) {
+        this.editMode = editMode;
+        notifyDataSetChanged();
+    }
+
+    //获取删除列表
+    public HashSet<String> getTitlesToRemove() {
+        return titlesRemove;
+    }
+
+    //删除掉列表的新闻条目
+    public void removeItemsByTitle(Set<String> titles) {
+        // 创建一个临时列表，用于存储要删除的项
+        List<FetchNews.NewsItem> toRemove = new ArrayList<>();
+        // 遍历数据集，查找要删除的项
+        for (FetchNews.NewsItem item : newslist) {
+            if (titles.contains(item.title)) {
+                toRemove.add(item);
+            }
+        }
+        newslist.removeAll(toRemove);
+        titlesRemove.clear(); // 清空选择
+        notifyDataSetChanged();
+    }
+
 }

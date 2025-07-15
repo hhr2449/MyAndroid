@@ -45,16 +45,15 @@
             android:textColor="@color/black"
             android:textSize="18sp" />
 
-        <Button
+        <TextView
             android:id="@+id/btn_ok"
             android:layout_width="wrap_content"
-            android:layout_height="35dp"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
             android:layout_marginRight="20sp"
-            android:backgroundTint="@color/white"
-            android:textStyle="bold"
             android:textColor="@color/red"
             android:text="编辑"
-            android:textSize="12sp" />
+            android:textSize="18sp" />
     </LinearLayout>
 
     <GridView

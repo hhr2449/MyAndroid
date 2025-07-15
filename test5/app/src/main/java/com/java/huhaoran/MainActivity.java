@@ -2,6 +2,7 @@ package com.java.huhaoran;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
+    private NavigationView navigationView;
     private final int REQUEST_CODE = 1001;
     private TabLayout tablayout;
     private ViewPager2 viewpager;
@@ -55,6 +57,38 @@ public class MainActivity extends AppCompatActivity {
         TabPreference tabPreference = new TabPreference(this);
         titles = tabPreference.loadTitles();
         titlesNoUse = tabPreference.loadTitlesNoUse();
+
+        //菜单页点击跳转
+        // 获取 NavigationView 引用
+        navigationView = findViewById(R.id.nav_view);
+
+        // 设置菜单项点击监听器
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                int id = item.getItemId();
+
+                if (id == R.id.nav_history) {
+                    // 处理浏览历史逻辑
+                    Intent intent = new Intent(MainActivity.this, BrowseHistoryActivity.class);
+                    startActivity(intent);
+                } else if (id == R.id.nav_favorites) {
+                    // 处理收藏夹逻辑
+                } else if (id == R.id.nav_password) {
+                    // 处理密码管理逻辑
+                } else if (id == R.id.nav_logout) {
+                    // 处理登出逻辑
+                } else if (id == R.id.nav_about) {
+                    // 处理关于页面逻辑
+                }
+
+                // 关闭抽屉（如果使用了 DrawerLayout）
+                DrawerLayout drawer = findViewById(R.id.drawer_layout);
+                drawer.closeDrawer(GravityCompat.START);
+
+                return true;
+            }
+        });
 
 
 //----------------------注册主菜单点击事件-------------------------//
