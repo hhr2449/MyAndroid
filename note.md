@@ -2419,17 +2419,43 @@ titlesAdapter.setOnTitlesTransferListener(new OnTitlesTransferListener() {
 2. 目标activity返回结果：
 
    ```java
-   Intent resultIntent = new Intent();
-   //设置intent携带的数据
-   resultIntent.putExtra("update_titles", new ArrayList<String>(titles));
-   //将resultIntent设为结果进行返回，RESULT_OK是预定义的常量，表示成功
-   setResult(RESULT_OK, resultIntent);
-   finish();
+   btn_back.setOnClickListener(v -> {
+               //设置在关闭页面时保存数据
+               titles = new ArrayList<>(titlesAdapter.titles);
+               titlesNoUse = new ArrayList<>(titlesNoUseAdapter.titlesNoUse);
+               TabPreference tabPreference = new TabPreference(TabsManagerActivity.this);
+               tabPreference.saveTabs(titles, titlesNoUse);
+               //将请求的信息返回给MainActivity
+               Intent resultIntent = new Intent();
+               resultIntent.putExtra("update_titles", new ArrayList<String>(titles));
+               setResult(RESULT_OK, resultIntent);
+               finish();
+           });
+   ```
+
+   注意用户不一定使用设置的返回键进行返回，可能使用手机上的物理返回键，所以要重载
+
+   ```java
+   @Override
+   public void onBackPressed() {
+       //设置在关闭页面时保存数据
+       titles = new ArrayList<>(titlesAdapter.titles);
+       titlesNoUse = new ArrayList<>(titlesNoUseAdapter.titlesNoUse);
+       TabPreference tabPreference = new TabPreference(TabsManagerActivity.this);
+       tabPreference.saveTabs(titles, titlesNoUse);
+       //将请求的信息返回给MainActivity
+       Intent resultIntent = new Intent();
+       resultIntent.putExtra("update_titles", new ArrayList<String>(titles));
+       setResult(RESULT_OK, resultIntent);
+       super.onBackPressed();
+   }
    ```
 
 3. 在原本的activity中接受结果并且进行相关的操作
 
    需要重写onActivityResult方法
+
+   在这个方法中需要对请求码和返回码进行判断，如果符合，则可以获取回传的数据，然后进行相关操作
 
    ```java
    @Override
@@ -2477,6 +2503,10 @@ titlesAdapter.setOnTitlesTransferListener(new OnTitlesTransferListener() {
        }
    }
    ```
+
+
+
+
 
 **TabsManager**:
 
@@ -4012,6 +4042,529 @@ loadNewsData(true);
 
 
 
+### 实现历史记录
+
+BrowseHistoryNote表单用于储存历史浏览记录
+
+```java
+package com.java.huhaoran.note;
+
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "browseHistory")
+public class BrowseHistoryNote {
+
+
+    //注意这里将主键设置为title，并且将插入规则设置为替代，这样数据库中智慧留存一条最近的记录，不会出现多次浏览出现多条记录
+    @PrimaryKey
+    @NonNull
+    public String title;
+    @ColumnInfo(name = "url")
+    public String publishTime;
+    @ColumnInfo(name = "content")
+    public String content;
+    @ColumnInfo(name = "publisher")
+    public String publisher;
+    @ColumnInfo(name = "category")
+    public String category;
+    //注意数据库不支持列表类型，只能拼接成字符串
+    @ColumnInfo(name = "image")
+    public String image;
+    @ColumnInfo(name = "video")
+    public String video;
+    @ColumnInfo(name = "time")
+    public long time;
+
+
+    public BrowseHistoryNote(String title, String publishTime, String content, String publisher, String category, String image, String video, long time) {
+        this.title = new String(title);
+        this.publishTime = new String(publishTime);
+        this.content = new String(content);
+        this.publisher = new String(publisher);
+        this.category = new String(category);
+        this.image = new String(image);
+        this.video = new String(video);
+        this.time = time;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+}
+```
+
+其中将title设置为主键，同时引入了时间戳time，定义插入规则为冲突时替代，这样可以实现同一个新闻只保留最近的浏览记录
+
+```java
+package com.java.huhaoran.Dao;
+
+import androidx.room.Dao;
+import androidx.room.Delete;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.Query;
+import androidx.room.Update;
+
+import com.java.huhaoran.note.BrowseHistoryNote;
+import com.java.huhaoran.note.SearchHistoryNote;
+import com.java.huhaoran.note.SummaryNote;
+
+import java.util.List;
+
+@Dao
+public interface BrowseHistoryDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insert(BrowseHistoryNote note);
+    default String insertAndReturnTitle(BrowseHistoryNote note) {
+        insert(note);
+        return note.getTitle();
+    }
+
+    //更新
+    @Update
+    void update(BrowseHistoryNote paramBrowseHistoryNote);
+
+    //删除
+    @Delete
+    void delete(BrowseHistoryNote paramBrowseHistoryNote);
+
+    //批量删除
+    @Query("DELETE FROM browseHistory WHERE title IN (:titles)")
+    void deleteByTitles(List<String> titles);
+
+    @Query("DELETE FROM browseHistory")
+    void deleteAll();
+
+
+    //按照title查询
+    @Query("SELECT * FROM browseHistory WHERE title = :title")
+    BrowseHistoryNote queryByTitle(String title);
+
+    //判断某个title是否存在
+    @Query("SELECT EXISTS(SELECT 1 FROM browseHistory WHERE title = :title)")
+    boolean existsByTitle(String title);
+
+    @Query("SELECT * FROM browseHistory ORDER BY time DESC LIMIT :limit OFFSET :offset")
+    List<BrowseHistoryNote> getBrowseHistoryPage(int limit, int offset);
+
+    @Query("SELECT title FROM browseHistory")
+    List<String> getAllReadTitles();
+
+}
+```
+
+使用getBrowseHistoryPage来查询记录，可以实现按时间排序获取
+
+在adapter中设定当库中有某条新闻的记录时，字体显示浅色，当点击时记录
+
+```java
+//如果已经读过该新闻（记录了对应的title），则字体显示灰色
+AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
+new Thread(() -> {
+    boolean isRead = db.browseHistoryDao().existsByTitle(newslist.get(position).title);
+    holder.itemView.post(() -> {
+        if (isRead) {
+            holder.title.setTextColor(Color.parseColor("#8E8B8B"));
+        }
+        else {
+            holder.title.setTextColor(Color.parseColor("#000000"));
+        }
+    });
+}).start();
+//如果点过赞或是有过收藏，要改变图标
+//注意子线程中不能改变ui
+new Thread(() -> {
+    boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title);
+    boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
+    holder.itemView.post(() -> {
+        if(isLike) {
+            holder.like.setImageResource(R.drawable.like_light);
+        }
+        else {
+            holder.like.setImageResource(R.drawable.like_dark);
+        }
+
+        if(isFavor) {
+            holder.favor.setImageResource(R.drawable.favor_light);
+        }
+        else {
+            holder.favor.setImageResource(R.drawable.favor_dark);
+        }
+    });
+}).start();
+```
+
+新闻的历史展示界面与主界面相似，使用了SmartRefreshLayout套RecyclerView，RecyclerView的Adapter基本仿照NewsAdapter，同时融合了之前标签管理界面的一些思想
+
+```java
+package com.java.huhaoran;
+import static java.lang.Math.max;
+
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.java.huhaoran.note.BrowseHistoryNote;
+import com.scwang.smart.refresh.layout.api.RefreshLayout;
+import com.java.huhaoran.R;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+public class BrowseHistoryActivity extends AppCompatActivity {
+
+    boolean isLoading = false;
+    boolean isEdit = false;
+    private int currentPage = 1;
+    //控件
+    private TextView deleteButton;
+    private TextView clearButton;
+    private ImageView backButton;
+    private RecyclerView recyclerView;
+    private HistoryItemAdapter browseHistoryAdapter;
+
+
+    //获取控件
+    private void getViewById() {
+        clearButton = findViewById(R.id.clear_button_browse);
+        deleteButton = findViewById(R.id.delete_button_browse);
+        backButton = findViewById(R.id.back_button_browse);
+        recyclerView = findViewById(R.id.browse_list);
+    }
+
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_browse_history);
+
+        //获取控件
+        getViewById();
+        //设置返回框的点击事件
+        backButton.setOnClickListener(v -> finish());
+
+        //创建适配器
+        browseHistoryAdapter = new HistoryItemAdapter(new ArrayList<>(), false, this);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(browseHistoryAdapter);
+        recyclerView.addItemDecoration(new TabNewsFragment.SimpleDividerDecoration(this));
+
+        //初始化界面
+        initView();
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+    }
+
+    //用于加载历史数据
+    //这里的逻辑应该是从数据库中进行分页请求，然后页数一直增加，直到没有更多数据为止（不用考虑日期等）
+    private void loadMoreNewsData() {
+        // 防止重复加载
+        if (isLoading) return;
+        isLoading = true;
+
+
+        // 从数据库请求下一页数据
+        new Thread(() -> {
+
+            List<BrowseHistoryNote> browseHistoryNotes = AppDatabase.getInstance(this).browseHistoryDao().getBrowseHistoryPage(10, (currentPage - 1) * 10);
+            // 递增页码
+            currentPage++;
+
+            if (browseHistoryNotes != null && browseHistoryNotes.size() > 0) {
+                List<FetchNews.NewsItem> newslist = TransferHistoryToNewsItem.transfer(browseHistoryNotes);
+
+                //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
+                runOnUiThread(() -> {
+                    // RecyclerView 相关更新
+                    browseHistoryAdapter.appendData(newslist);
+                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                    refreshLayout.finishLoadMore(); // 或 finishRefresh()
+                    isLoading = false;
+                });
+            } else {
+                //没有更多数据了
+                runOnUiThread(() -> {
+                    Toast.makeText(BrowseHistoryActivity.this, "没有更多记录了", Toast.LENGTH_SHORT).show();
+                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                    refreshLayout.finishLoadMore(); // 或 finishRefresh()
+                    isLoading = false;
+                });
+
+            }
+        }).start();
+    }
+
+    private void initView() {
+        //加载数据
+        loadMoreNewsData();
+        RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+        // 上拉加载更多
+        refreshLayout.setOnLoadMoreListener(refreshlayout -> {
+            // 加载下一页
+            loadMoreNewsData();
+        });
+
+        //删除按钮的点击事件
+        deleteButton.setOnClickListener(v -> {
+            //如果点击是是编辑模式，则进行删除
+            if(isEdit) {
+                //获取要删除新闻的标题
+                HashSet<String> titlesToRemove = browseHistoryAdapter.getTitlesToRemove();
+
+                if (!titlesToRemove.isEmpty()) {
+                    // 弹出确认对话框
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("确认删除")
+                            .setMessage("确定要删除选中的 " + titlesToRemove.size() + " 条记录吗？\n 删除后无法恢复")
+                            .setPositiveButton("删除", (dialog, which) -> {
+                                new Thread(() -> {
+                                    AppDatabase db = AppDatabase.getInstance(this);
+                                    // 优化：批量删除
+                                    db.browseHistoryDao().deleteByTitles(new ArrayList<>(titlesToRemove));
+
+                                    runOnUiThread(() -> {
+                                        browseHistoryAdapter.removeItemsByTitle(titlesToRemove);
+                                        Toast.makeText(this, "已删除选中记录", Toast.LENGTH_SHORT).show();
+                                    });
+                                }).start();
+                            })
+                            .setNegativeButton("取消", null)
+                            .show();
+                }
+
+
+            }
+
+            isEdit = !isEdit;
+            //改变编辑模式
+            browseHistoryAdapter.setEditMode(isEdit);
+            //改变按键的文字
+            deleteButton.setText(isEdit ? "完成" : "编辑");
+
+        });
+
+        //清空按钮的点击事件
+        clearButton.setOnClickListener(v -> {
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("确认清空")
+                    .setMessage("确认要清空所有记录吗,\n 清空后无法恢复")
+                    .setPositiveButton("清空", (dialog, which) -> {
+                        new Thread(() -> {
+                            AppDatabase db = AppDatabase.getInstance(this);
+                            db.browseHistoryDao().deleteAll();
+
+                            runOnUiThread(() -> {
+                                browseHistoryAdapter.updateData(new ArrayList<>());
+                                Toast.makeText(this, "已清空所有记录", Toast.LENGTH_SHORT).show();
+                            });
+                        }).start();
+                    })
+                .setNegativeButton("取消", null)
+                .show();
+        });
+
+    }
+}
+```
+
+维护了一个用于指示编辑状态的变量
+
+### 实现收藏记录
+
+同样设置表单，然后点击收藏时加入表单，收藏列表与之前历史列表的实现几乎完全相同
+
+有一个比较难实现的点，就是我设置了在新闻列表中展现收藏和点赞的状态，并且在adapter中设置了根据当前数据库中是否有对应新闻的收藏或点赞记录来选择列表中该条新闻的状态
+
+但是这就有问题，就是这些状态是不能实时更新的，当用户从页面中进入新闻，并且进行了点赞或者收藏，出去之后是不会改变列表的展示状态的，如何同步是一个难点
+
+可以通过startActivityForResult来进行传递：
+
+#### startActivityForResult
+
+可以将一个activity看作一个房间，手机屏幕看作在房间之间行走的人，房间之间不能直接交换信息，必须使用包裹进行传递，这个包裹就是Intent类对象
+
+1. `Intent intent = new Intent(A.this, B.class)`就相当于是创建了一个从A到B的包裹，putExtra就相当于向包裹里放东西
+
+startActivity(intent)就相当于是去到intent指定的房间，并且把intent这个包裹带过去，此时B就可以接受到intent带来的信息并且进行使用
+
+但是此时直接退回原本的页面并不能将B中的信息带走
+
+而`((Activity)v.getContext()).startActivityForResult(intent, 1003);`则相当于是送过去包裹的同时送了一张名为requestCode的快递单
+
+2. 在B页面中
+
+```java
+Intent resultIntent = new Intent();
+resultIntent.putExtra("title", titleText);
+setResult(RESULT_OK, resultIntent);
+```
+
+setResult(RESULT_OK, resultIntent);就相当于如果前面的房间送来了快递单，就将resultIntent上贴上对应快递单，并且送回去
+
+3. A页面中可以重写方法onActivityResult
+
+   ```java
+   @Override
+   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+       super.onActivityResult(requestCode, resultCode, data);
+       //判断返回码
+       if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
+           //获取返回的数据
+           List<String> update_titles = data.getStringArrayListExtra("update_titles");
+           if (update_titles != null) {
+               //更新标题列表
+               MainActivity.titles = update_titles;
+               //再次设置tablayout和viewpager
+               viewpager.setAdapter(new FragmentStateAdapter(this) {
+                   //这里创建了一个匿名的FragmentStateAdapter对象
+                   @NonNull
+                   @Override
+                   //这个方法的返回值是一个Fragment对象，当ViewPager需要显示一个页面的时候就会调用
+                   //这个方法，根据位置返回一个Fragment对象
+                   public Fragment createFragment(int position) {
+                       //使用newInstance()方法创建一个Fragment对象，传入的主题参数使用titles[position]获取
+                       return TabNewsFragment.newInstance(titles.get(position));
+                   }
+   
+                   @Override
+                   //告诉ViewPager一共有多少个页面
+                   public int getItemCount() {
+                       //总的页面数就是标题的个数
+                       return titles.size();
+                   }
+               });
+   
+           }
+           //viewPager和tab_layout关联在一起
+           TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tablayout, viewpager, new TabLayoutMediator.TabConfigurationStrategy() {
+               @Override
+               public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                   tab.setText(titles.get(position));
+               }
+   
+           });
+   
+           //启用绑定
+           tabLayoutMediator.attach();
+       }
+   
+       if (requestCode == 1003 && resultCode == RESULT_OK && data != null) {
+               String title = data.getStringExtra("title");
+               int currentItem = viewpager.getCurrentItem();
+               List<Fragment> fragments = getSupportFragmentManager().getFragments();
+               for (Fragment fragment : fragments) {
+                   if (fragment instanceof TabNewsFragment && fragment.isVisible()) {
+                       ((TabNewsFragment) fragment).refreshSingleNews(title);
+                       break;
+                   }
+               }
+   
+   
+   
+       }
+   }
+   ```
+
+   这个方法相当于一个快递站，所有送回来的快递都要在这里处理，`int requestCode, int resultCode, Intent data`，分别相当于快递的单号，快递附加的信息，快递的内容
+
+   一般在这里可以根据requestCode来识别并且进行对应的操作(因为发出去的快递单号不一定只有一个)
+
+
+
+#### 收藏情况的同步显示
+
+思路：列表页中跳转时发送一个请求，然后返回时返回title，在原本的列表界面中根据传回的title更新对应的item
+
+1. 主界面
+
+   在NewsAdapter中的点击事件设置
+
+   ```Java
+   // 改为startActivityForResult
+   if (v.getContext() instanceof Activity) {
+       ((Activity)v.getContext()).startActivityForResult(intent, 1003);
+   } else {
+       v.getContext().startActivity(intent);
+   }
+   ```
+
+   这样点击跳转到详情页面的时候就会带上一个1003的快递单
+
+   在详情界面中
+
+   ```java
+   public void onBackPressed() {
+       Intent resultIntent = new Intent();
+       resultIntent.putExtra("title", titleText);
+       setResult(RESULT_OK, resultIntent);
+       super.onBackPressed();
+   }
+   ```
+
+​		返回的时候将title返回
+
+​		==注意这里的层次关系，在MainActivity中可以操控fragment，在fragment中操控Adapter，Adapter进行item的刷新==
+
+​		由于之前跳转是从MainActivity跳转到详情页的，所以应该在主界面中接收
+
+```java
+@Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        //判断返回码
+       //……………………
+
+        if (requestCode == 1003 && resultCode == RESULT_OK && data != null) {
+                String title = data.getStringExtra("title");
+                int currentItem = viewpager.getCurrentItem();
+                List<Fragment> fragments = getSupportFragmentManager().getFragments();
+                for (Fragment fragment : fragments) {
+                    if (fragment instanceof TabNewsFragment && fragment.isVisible()) {
+                        ((TabNewsFragment) fragment).refreshSingleNews(title);
+                        break;
+                    }
+                }
+
+
+
+        }
+    }
+```
+
+主界面中找到当前所在的fragment，然后在fragment中设置refreshSignalNews来进行刷新
+
+```java
+public void refreshSingleNews(String title) {
+    int position = newsAdapter.getPosByTitle(title);
+    if (newsAdapter != null) {
+        newsAdapter.notifyItemChanged(position);
+    }
+}
+```
+
+
+
+
+
 
 
 ### bug
@@ -4021,11 +4574,13 @@ loadNewsData(true);
    解决：viewpager.setOffscreenPageLimit(titles.length);加上这一行代码，将所有页面全部预先缓存就不会闪退了
 
    ```java
+   
    if (response != null && response.data != null) {
        if (!isAdded() || getActivity() == null) return; // 添加这个判断
        requireActivity().runOnUiThread(() -> {
            if (!isAdded() || getActivity() == null) return; // 再保险地判断一次
            NewsAdapter adapter = new NewsAdapter(response.data);
+           
            recyclerView.setAdapter(adapter);
            recyclerView.addItemDecoration(new SimpleDividerDecoration(getContext()));
        });

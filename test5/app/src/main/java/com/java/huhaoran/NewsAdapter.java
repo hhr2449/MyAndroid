@@ -2,6 +2,7 @@ package com.java.huhaoran;
 
 import static com.java.huhaoran.FetchNews.getLinks;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -207,7 +208,14 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
                 intent.putExtra("publisher", newsitem.publisher);
                 intent.putExtra("publishTime", newsitem.publishTime);
                 intent.putExtra("video", newsitem.video);
-                v.getContext().startActivity(intent);
+                intent.putExtra("position", holder.getAdapterPosition());
+
+                // 改为startActivityForResult
+                if (v.getContext() instanceof Activity) {
+                    ((Activity)v.getContext()).startActivityForResult(intent, 1003);
+                } else {
+                    v.getContext().startActivity(intent);
+                }
             }
         });
 
@@ -231,6 +239,23 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         this.newslist.clear();
         this.newslist.addAll(newData);
         notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
+    }
+
+    public int getPosByTitle(String title) {
+        int pos = -1;
+        for (int i = 0; i < newslist.size(); i++) {
+            if (newslist.get(i).title.equals(title)) {
+                pos = i;
+            }
+        }
+        return pos;
+    }
+
+    public void refreshSingleNews(String title) {
+        int pos = getPosByTitle(title);
+        if (pos != -1) {
+            notifyItemChanged(pos);
+        }
     }
 
 

@@ -1,11 +1,13 @@
 package com.java.huhaoran;
 
+import static android.app.Activity.RESULT_OK;
 import static com.java.huhaoran.MainActivity.newsCache;
 
 import static java.lang.Math.max;
 import static java.lang.StrictMath.random;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -288,5 +290,13 @@ public class TabNewsFragment extends Fragment {
             loadNewsData(true);
         }
 
+    }
+
+
+    public void refreshSingleNews(String title) {
+        int position = newsAdapter.getPosByTitle(title);
+        if (newsAdapter != null) {
+            newsAdapter.notifyItemChanged(position);
+        }
     }
 }

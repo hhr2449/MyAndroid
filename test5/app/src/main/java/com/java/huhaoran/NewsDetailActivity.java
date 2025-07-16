@@ -38,6 +38,7 @@ public class NewsDetailActivity extends AppCompatActivity {
     private ExoPlayer player;
     private boolean isLike = false;
     private boolean isFavor = false;
+    private String titleText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +60,7 @@ public class NewsDetailActivity extends AppCompatActivity {
         ImageView btn_like = findViewById(R.id.btn_like);
         ImageView btn_favor = findViewById(R.id.btn_favor);
         //从主界面获取新闻信息
-        String titleText = getIntent().getStringExtra("title");
+        titleText = getIntent().getStringExtra("title");
         String publishTimeText = getIntent().getStringExtra("publishTime");
         String publisherText = getIntent().getStringExtra("publisher");
         String contentText = getIntent().getStringExtra("content");
@@ -73,8 +74,13 @@ public class NewsDetailActivity extends AppCompatActivity {
         content.setText(contentText);
         //设置返回键
         btn_back.setOnClickListener(v -> {
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("title", titleText); // 带回position
+            setResult(RESULT_OK, resultIntent);
             finish();
         });
+
+
 
         //获取图片链接
         if(image != null) {
@@ -320,7 +326,17 @@ public class NewsDetailActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("title", titleText);
+        setResult(RESULT_OK, resultIntent);
+        super.onBackPressed();
+    }
+
 }
+
+
 
 class ChatResponse {
     Choice [] choices;
@@ -331,4 +347,6 @@ class ChatResponse {
     class Message {
         String content;
     }
+
+
 }

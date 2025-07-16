@@ -100,4 +100,19 @@ public class TabsManagerActivity extends AppCompatActivity {
 
 
     }
+
+    //注意有时候用户并不会点击设置好的返回键，而是点击手机上的回退，所以要重载一下对手机回退键的监听
+    @Override
+    public void onBackPressed() {
+        //设置在关闭页面时保存数据
+        titles = new ArrayList<>(titlesAdapter.titles);
+        titlesNoUse = new ArrayList<>(titlesNoUseAdapter.titlesNoUse);
+        TabPreference tabPreference = new TabPreference(TabsManagerActivity.this);
+        tabPreference.saveTabs(titles, titlesNoUse);
+        //将请求的信息返回给MainActivity
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("update_titles", new ArrayList<String>(titles));
+        setResult(RESULT_OK, resultIntent);
+        super.onBackPressed();
+    }
 }

@@ -1,11 +1,13 @@
 package com.java.huhaoran;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -183,5 +185,14 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                     .show();
         });
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == 1004 && resultCode == RESULT_OK && data != null) {
+            String title = data.getStringExtra("title");
+            favoritesHistoryAdapter.refreshSingleNews(title);
+        }
     }
 }

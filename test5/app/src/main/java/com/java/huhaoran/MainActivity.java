@@ -254,6 +254,21 @@ public class MainActivity extends AppCompatActivity {
             //启用绑定
             tabLayoutMediator.attach();
         }
+
+        if (requestCode == 1003 && resultCode == RESULT_OK && data != null) {
+                String title = data.getStringExtra("title");
+                int currentItem = viewpager.getCurrentItem();
+                List<Fragment> fragments = getSupportFragmentManager().getFragments();
+                for (Fragment fragment : fragments) {
+                    if (fragment instanceof TabNewsFragment && fragment.isVisible()) {
+                        ((TabNewsFragment) fragment).refreshSingleNews(title);
+                        break;
+                    }
+                }
+
+
+
+        }
     }
     //-------------------同步标签----------------------------
 
