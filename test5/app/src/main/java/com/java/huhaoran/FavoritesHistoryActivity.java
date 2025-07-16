@@ -2,6 +2,7 @@ package com.java.huhaoran;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -137,7 +138,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                     // 弹出确认对话框
                     new androidx.appcompat.app.AlertDialog.Builder(this)
                             .setTitle("确认删除")
-                            .setMessage("确定要删除选中的 " + titlesToRemove.size() + " 条记录吗？\n 删除后无法恢复")
+                            .setMessage("确定要删除选中的 " + titlesToRemove.size() + " 条记录吗？\n删除后无法恢复")
                             .setPositiveButton("删除", (dialog, which) -> {
                                 new Thread(() -> {
                                     AppDatabase db = AppDatabase.getInstance(this);
@@ -153,8 +154,12 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                             .setNegativeButton("取消", null)
                             .show();
                 }
+                backButton.setVisibility(View.VISIBLE);
 
-
+            }
+            else {
+                Toast.makeText(this, "请选择要删除的记录", Toast.LENGTH_SHORT).show();
+                backButton.setVisibility(View.GONE);
             }
 
             isEdit = !isEdit;
