@@ -1,4 +1,0 @@
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="?attr/colorButtonNormal" /> <!-- 可在代码中设置 tint -->
-    <corners android:radius="16dp" />
-</shape>
