@@ -10,12 +10,15 @@ import androidx.room.PrimaryKey;
 public class LikeNote {
     @PrimaryKey(autoGenerate = true)
     public int id;
+    @ColumnInfo(name = "userName")
+    public String userName;
 
     @ColumnInfo(name = "title")
     public String title;
 
-    public LikeNote(String title)
+    public LikeNote(String userName,String title)
     {
-        this.title = title;
+        this.userName = new String(userName);
+        this.title = new String (title);
     }
 }

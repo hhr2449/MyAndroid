@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="32dp"
+    tools:context=".LoginActivity">
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp">
+
+        <ImageView
+            android:id="@+id/login_back_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:clickable="true"
+            android:contentDescription="返回"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/back_with_arrow" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="登录"
+            android:textColor="#000000"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- 原有登录文字调整为提示信息 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="请输入账号信息"
+        android:textColor="#666666"
+        android:textSize="16sp"
+        android:layout_marginBottom="32dp"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp">
+
+    <!-- 输入框 -->
+    <EditText
+        android:id="@+id/login_username"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="请输入用户名"
+        android:textColorHint="@color/light_black"
+        android:textColor="#000000"
+        android:paddingStart="40dp"
+        android:paddingEnd="40dp"
+        android:textSize="18sp"
+        android:singleLine="true"
+        android:background="@drawable/edittext_bg"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- 用户图标 -->
+    <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10dp"
+        android:src="@drawable/username" />
+
+</RelativeLayout>
+
+<RelativeLayout
+android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginTop="16dp">
+
+
+<EditText
+android:id="@+id/login_password"
+android:layout_width="match_parent"
+android:layout_height="50dp"
+    android:hint="请输入密码"
+    android:inputType="textPassword"
+    android:textColorHint="@color/light_black"
+    android:textColor="#000000"
+    android:paddingStart="40dp"
+    android:paddingEnd="40dp"
+    android:textSize="18sp"
+    android:singleLine="true"
+    android:background="@drawable/edittext_bg"
+    android:layout_marginBottom="8dp"/>
+
+    <!-- 密码图标 -->
+<ImageView
+android:layout_width="20dp"
+android:layout_height="20dp"
+android:layout_alignParentStart="true"
+android:layout_centerVertical="true"
+android:layout_marginStart="10dp"
+android:src="@drawable/password2" />
+
+    </RelativeLayout>
+
+<Button
+android:id="@+id/btn_login"
+android:text="登录"
+android:textColor="@android:color/white"
+android:background="@drawable/click_effect3"
+android:layout_width="match_parent"
+android:layout_height="50dp"
+    android:layout_marginTop="32dp"
+    android:textSize="18sp"/>
+
+    <Button
+    android:id="@+id/btn_to_register"
+    android:text="没有账号？去注册"
+    android:background="@android:color/transparent"
+    android:textColor="@color/red"
+    android:layout_marginTop="24dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="16sp"/>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

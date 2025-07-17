@@ -40,6 +40,9 @@ public class NewsDetailActivity extends AppCompatActivity {
     private boolean isFavor = false;
     private String titleText;
 
+    private boolean isLogin = UserManager.isLoggedIn();
+    private String userName = UserManager.getCurrentUserName();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -234,87 +237,92 @@ public class NewsDetailActivity extends AppCompatActivity {
             }).start();
         });
 
-        //如果点过赞或是进行过收藏，要显示出来
-        //注意子线程中不能改变ui
-        AppDatabase db = AppDatabase.getInstance(this);
-        // 初始化点赞/收藏状态并更新 UI
-        new Thread(() -> {
-            boolean like = db.likeDao().existsByTitle(titleText);
-            boolean favor = db.favoritesHistoryDao().existsByTitle(titleText);
-            //注意不能把ui操作放到线程外，否则可能来不及更新
-            runOnUiThread(() -> {
-                isLike = like;
-                isFavor = favor;
-                btn_like.setImageResource(isLike ? R.drawable.like_light : R.drawable.like_dark);
-                btn_favor.setImageResource(isFavor ? R.drawable.favor_light : R.drawable.favor_dark);
-            });
-        }).start();
-
-        //设置点赞和收藏的点击事件
-        btn_like.setOnClickListener(v -> {
+        if(isLogin) {
+            //如果点过赞或是进行过收藏，要显示出来
+            //注意子线程中不能改变ui
+            AppDatabase db = AppDatabase.getInstance(this);
+            // 初始化点赞/收藏状态并更新 UI
             new Thread(() -> {
-                if (isLike) {
-                    db.likeDao().deleteByTitle(titleText);
-                } else {
-                    db.likeDao().insert(new LikeNote(titleText));
-                }
-                isLike = !isLike;
+                boolean like = db.likeDao().existsByTitle(titleText, userName);
+                boolean favor = db.favoritesHistoryDao().existsByTitle(titleText, userName);
+                //注意不能把ui操作放到线程外，否则可能来不及更新
                 runOnUiThread(() -> {
+                    isLike = like;
+                    isFavor = favor;
                     btn_like.setImageResource(isLike ? R.drawable.like_light : R.drawable.like_dark);
-                    btn_like.animate()
-                            .scaleX(1.3f)
-                            .scaleY(1.3f)
-                            .setDuration(100)
-                            .withEndAction(() -> {
-                                btn_like.animate()
-                                        .scaleX(1.0f)
-                                        .scaleY(1.0f)
-                                        .setDuration(100)
-                                        .start();
-                            })
-                            .start();
+                    btn_favor.setImageResource(isFavor ? R.drawable.favor_light : R.drawable.favor_dark);
                 });
             }).start();
-        });
+
+            //设置点赞和收藏的点击事件
+            btn_like.setOnClickListener(v -> {
+                new Thread(() -> {
+                    if (isLike) {
+                        db.likeDao().deleteByTitle(titleText, userName);
+                    } else {
+                        db.likeDao().insert(new LikeNote(userName, titleText));
+                    }
+                    isLike = !isLike;
+                    runOnUiThread(() -> {
+                        btn_like.setImageResource(isLike ? R.drawable.like_light : R.drawable.like_dark);
+                        btn_like.animate()
+                                .scaleX(1.3f)
+                                .scaleY(1.3f)
+                                .setDuration(100)
+                                .withEndAction(() -> {
+                                    btn_like.animate()
+                                            .scaleX(1.0f)
+                                            .scaleY(1.0f)
+                                            .setDuration(100)
+                                            .start();
+                                })
+                                .start();
+                    });
+                }).start();
+            });
 
 
-        btn_favor.setOnClickListener(v -> {
-            new Thread(() -> {
-                //如果已经收藏，则取消收藏
-                if (isFavor) {
-                    db.favoritesHistoryDao().deleteByTitle(titleText);
-                }
-                else {
-                    //否则加入
-                    db.favoritesHistoryDao().insert(new FavoritesHistoryNote(titleText, publishTimeText, contentText, publisherText, image, video, System.currentTimeMillis()));
-                }
-                //反转
-                isFavor = !isFavor;
+            btn_favor.setOnClickListener(v -> {
+                new Thread(() -> {
+                    //如果已经收藏，则取消收藏
+                    if (isFavor) {
+                        db.favoritesHistoryDao().deleteByTitle(titleText, userName);
+                    }
+                    else {
+                        //否则加入
+                        db.favoritesHistoryDao().insert(new FavoritesHistoryNote(userName, titleText, publishTimeText, contentText, publisherText, image, video, System.currentTimeMillis()));
+                    }
+                    //反转
+                    isFavor = !isFavor;
 
-                runOnUiThread(() -> {
-                    // 图标切换
-                    btn_favor.setImageResource(
-                            isFavor ? R.drawable.favor_light : R.drawable.favor_dark
-                    );
+                    runOnUiThread(() -> {
+                        // 图标切换
+                        btn_favor.setImageResource(
+                                isFavor ? R.drawable.favor_light : R.drawable.favor_dark
+                        );
 
-                    // 缩放动画
-                    btn_favor.animate()
-                            .scaleX(1.3f)
-                            .scaleY(1.3f)
-                            .setDuration(100)
-                            .withEndAction(() -> {
-                                btn_favor.animate()
-                                        .scaleX(1.0f)
-                                        .scaleY(1.0f)
-                                        .setDuration(100)
-                                        .start();
-                            })
-                            .start();
-                } );
-            }).start();
+                        // 缩放动画
+                        btn_favor.animate()
+                                .scaleX(1.3f)
+                                .scaleY(1.3f)
+                                .setDuration(100)
+                                .withEndAction(() -> {
+                                    btn_favor.animate()
+                                            .scaleX(1.0f)
+                                            .scaleY(1.0f)
+                                            .setDuration(100)
+                                            .start();
+                                })
+                                .start();
+                    } );
+                }).start();
 
 
-        });
+            });
+        }
+
+
+
 
     }
     @Override

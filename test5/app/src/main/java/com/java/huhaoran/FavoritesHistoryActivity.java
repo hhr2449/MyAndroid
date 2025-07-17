@@ -29,6 +29,8 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
     boolean isLoading = false;
     boolean isEdit = false;
     private int currentPage = 1;
+    //获取当前的用户名
+    private String userName = UserManager.getCurrentUserName();
     //控件
     private TextView deleteButton;
     private TextView clearButton;
@@ -57,17 +59,20 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
         getViewById();
         //设置返回框的点击事件
         backButton.setOnClickListener(v -> finish());
-
-        //创建适配器
-        favoritesHistoryAdapter = new HistoryItemAdapter(new ArrayList<>(), false, this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(favoritesHistoryAdapter);
-        recyclerView.addItemDecoration(new TabNewsFragment.SimpleDividerDecoration(this));
-
-        //初始化界面
-        initView();
-
-
+        //如果没有登录则不进行列表的显示，而是提示没有登录
+        //提前过滤掉没有登录的情况，这样之后查库就可以确认一定是有用户的了
+        if(!UserManager.isLoggedIn()) {
+            Toast.makeText(this, "请先登录以查看收藏记录", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            //创建适配器
+            favoritesHistoryAdapter = new HistoryItemAdapter(new ArrayList<>(), false, this);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            recyclerView.setAdapter(favoritesHistoryAdapter);
+            recyclerView.addItemDecoration(new TabNewsFragment.SimpleDividerDecoration(this));
+            //初始化界面
+            initView();
+        }
 
 
 
@@ -78,7 +83,6 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
         });
     }
 
-    //用于加载历史数据
     //这里的逻辑应该是从数据库中进行分页请求，然后页数一直增加，直到没有更多数据为止（不用考虑日期等）
     private void loadMoreNewsData() {
         // 防止重复加载
@@ -89,7 +93,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
         // 从数据库请求下一页数据
         new Thread(() -> {
 
-            List<FavoritesHistoryNote> favoritesHistoryNotes = AppDatabase.getInstance(this).favoritesHistoryDao().getFavoritesHistoryPage(10, (currentPage - 1) * 10);
+            List<FavoritesHistoryNote> favoritesHistoryNotes = AppDatabase.getInstance(this).favoritesHistoryDao().getFavoritesHistoryPage(10, (currentPage - 1) * 10, userName);
             // 递增页码
             currentPage++;
 
@@ -143,7 +147,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                                 new Thread(() -> {
                                     AppDatabase db = AppDatabase.getInstance(this);
                                     // 优化：批量删除
-                                    db.favoritesHistoryDao().deleteByTitles(new ArrayList<>(titlesToRemove));
+                                    db.favoritesHistoryDao().deleteByTitles(new ArrayList<>(titlesToRemove), userName);
 
                                     runOnUiThread(() -> {
                                         favoritesHistoryAdapter.removeItemsByTitle(titlesToRemove);
@@ -178,7 +182,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                     .setPositiveButton("清空", (dialog, which) -> {
                         new Thread(() -> {
                             AppDatabase db = AppDatabase.getInstance(this);
-                            db.favoritesHistoryDao().deleteAll();
+                            db.favoritesHistoryDao().deleteAll(userName);
 
                             runOnUiThread(() -> {
                                 favoritesHistoryAdapter.updateData(new ArrayList<>());

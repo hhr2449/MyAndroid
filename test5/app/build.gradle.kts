@@ -76,5 +76,6 @@ dependencies {
     implementation(libs.glm)
     annotationProcessor(libs.roomcompiler)
     implementation(libs.roomruntime)
+    implementation(libs.core)
 
 }

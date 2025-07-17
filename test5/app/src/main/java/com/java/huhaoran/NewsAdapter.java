@@ -32,6 +32,9 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     private static final int TYPE_WITH_ONEIMAGE = 1;
     private static final int TYPE_WITH_TWOIMAGE = 2;
     private static final int TYPE_WITH_THREEIMAGE = 3;
+
+    private String userName = UserManager.getCurrentUserName();
+    private boolean isLogin = UserManager.isLoggedIn();
     //构造函数将列表传入
     public NewsAdapter(List<FetchNews.NewsItem> newslist) {
         this.newslist = newslist;
@@ -150,54 +153,60 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             e.printStackTrace();
 
         }
-        //如果已经读过该新闻（记录了对应的title），则字体显示灰色
-        AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
-        new Thread(() -> {
-            boolean isRead = db.browseHistoryDao().existsByTitle(newslist.get(position).title);
-            holder.itemView.post(() -> {
-                if (isRead) {
-                    holder.title.setTextColor(Color.parseColor("#8E8B8B"));
-                }
-                else {
-                    holder.title.setTextColor(Color.parseColor("#000000"));
-                }
-            });
-        }).start();
-        //如果点过赞或是有过收藏，要改变图标
-        //注意子线程中不能改变ui
-        new Thread(() -> {
-            boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title);
-            boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
-            holder.itemView.post(() -> {
-                if(isLike) {
-                    holder.like.setImageResource(R.drawable.like_light);
-                }
-                else {
-                    holder.like.setImageResource(R.drawable.like_dark);
-                }
 
-                if(isFavor) {
-                    holder.favor.setImageResource(R.drawable.favor_light);
-                }
-                else {
-                    holder.favor.setImageResource(R.drawable.favor_dark);
-                }
-            });
-        }).start();
+        //如果注册了，则要根据阅读和点赞的记录来改变列表
+        if(isLogin) {
+            //如果已经读过该新闻（记录了对应的title），则字体显示灰色
+            AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
+            new Thread(() -> {
+                boolean isRead = db.browseHistoryDao().existsByTitle(newslist.get(position).title, userName);
+                holder.itemView.post(() -> {
+                    if (isRead) {
+                        holder.title.setTextColor(Color.parseColor("#8E8B8B"));
+                    }
+                    else {
+                        holder.title.setTextColor(Color.parseColor("#000000"));
+                    }
+                });
+            }).start();
+            //如果点过赞或是有过收藏，要改变图标
+            //注意子线程中不能改变ui
+            new Thread(() -> {
+                boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title, userName);
+                boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title, userName);
+                holder.itemView.post(() -> {
+                    if(isLike) {
+                        holder.like.setImageResource(R.drawable.like_light);
+                    }
+                    else {
+                        holder.like.setImageResource(R.drawable.like_dark);
+                    }
 
-        //不设置点击事件，只做展示使用（因为太麻烦了,如果可以的话可能会出现有收藏无浏览的情况，这样的情况下就必须在HistoryItemAdater中进行入库操作）
+                    if(isFavor) {
+                        holder.favor.setImageResource(R.drawable.favor_light);
+                    }
+                    else {
+                        holder.favor.setImageResource(R.drawable.favor_dark);
+                    }
+                });
+            }).start();
+            //不设置点击事件，只做展示使用（因为太麻烦了,如果可以的话可能会出现有收藏无浏览的情况，这样的情况下就必须在HistoryItemAdater中进行入库操作）
+        }
+
 
 
         //设置点击事件监听，点击列表可以跳转到对应的新闻详情页面
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //记录浏览过的新闻
-                AppDatabase db = AppDatabase.getInstance(v.getContext());
-                new Thread(() -> {
-                    BrowseHistoryNote note = new BrowseHistoryNote(newsitem.title, newsitem.publishTime, newsitem.content, newsitem.publisher, newsitem.category, newsitem.image, newsitem.video, System.currentTimeMillis());
-                    db.browseHistoryDao().insert(note);
-                }).start();
+                if(isLogin) {
+                    //记录浏览过的新闻
+                    AppDatabase db = AppDatabase.getInstance(v.getContext());
+                    new Thread(() -> {
+                        BrowseHistoryNote note = new BrowseHistoryNote(userName,newsitem.title, newsitem.publishTime, newsitem.content, newsitem.publisher, newsitem.category, newsitem.image, newsitem.video, System.currentTimeMillis());
+                        db.browseHistoryDao().insert(note);
+                    }).start();
+                }
                 //改变颜色
                 holder.title.setTextColor(Color.parseColor("#8E8B8B"));
                 //跳转页面

@@ -39,6 +39,9 @@ public class HistoryItemAdapter extends RecyclerView.Adapter<HistoryItemAdapter.
     private static final int TYPE_WITH_ONEIMAGE = 1;
     private static final int TYPE_WITH_TWOIMAGE = 2;
     private static final int TYPE_WITH_THREEIMAGE = 3;
+
+    private boolean isLogin = UserManager.isLoggedIn();
+    private String userName = UserManager.getCurrentUserName();
     //构造函数将列表传入
     public HistoryItemAdapter(List<FetchNews.NewsItem> newslist , boolean editMode, Context mContext ) {
         this.editMode = editMode;
@@ -161,26 +164,29 @@ public class HistoryItemAdapter extends RecyclerView.Adapter<HistoryItemAdapter.
         }
 
         AppDatabase db = AppDatabase.getInstance(holder.itemView.getContext());
-        //如果点过赞或是有过收藏，要改变图标
-        new Thread(() -> {
-            boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title);
-            boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title);
-            holder.itemView.post(() -> {
-                if(isLike) {
-                    holder.like.setImageResource(R.drawable.like_light);
-                }
-                else {
-                    holder.like.setImageResource(R.drawable.like_dark);
-                }
+        if(isLogin) {
+            //如果点过赞或是有过收藏，要改变图标
+            new Thread(() -> {
+                boolean isLike = db.likeDao().existsByTitle(newslist.get(position).title, userName);
+                boolean isFavor = db.favoritesHistoryDao().existsByTitle(newslist.get(position).title, userName);
+                holder.itemView.post(() -> {
+                    if(isLike) {
+                        holder.like.setImageResource(R.drawable.like_light);
+                    }
+                    else {
+                        holder.like.setImageResource(R.drawable.like_dark);
+                    }
 
-                if(isFavor) {
-                    holder.favor.setImageResource(R.drawable.favor_light);
-                }
-                else {
-                    holder.favor.setImageResource(R.drawable.favor_dark);
-                }
-            });
-        }).start();
+                    if(isFavor) {
+                        holder.favor.setImageResource(R.drawable.favor_light);
+                    }
+                    else {
+                        holder.favor.setImageResource(R.drawable.favor_dark);
+                    }
+                });
+            }).start();
+        }
+
 
         //设置点击事件监听，非编辑模式点击列表可以跳转到对应的新闻详情页面
         //如果处于编辑模式，则设置点击事件，点击某一条新闻,如果未被选中，则会变成深色，并且加入删除列表，否则则变成浅色，并且从删除列表中删除

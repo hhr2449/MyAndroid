@@ -13,6 +13,8 @@ public class BrowseHistoryNote {
     @PrimaryKey
     @NonNull
     public String title;
+    @ColumnInfo(name = "userName")
+    public String userName;
     @ColumnInfo(name = "url")
     public String publishTime;
     @ColumnInfo(name = "content")
@@ -30,7 +32,8 @@ public class BrowseHistoryNote {
     public long time;
 
 
-    public BrowseHistoryNote(String title, String publishTime, String content, String publisher, String category, String image, String video, long time) {
+    public BrowseHistoryNote(String userName, String title, String publishTime, String content, String publisher, String category, String image, String video, long time) {
+        this.userName = new String(userName);
         this.title = new String(title);
         this.publishTime = new String(publishTime);
         this.content = new String(content);

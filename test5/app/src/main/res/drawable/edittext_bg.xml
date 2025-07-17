@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 输入框获取焦点时的样式 -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <!-- 圆角弧度 -->
+            <corners android:radius="8dp" />
+            <!-- 边框宽度和颜色（焦点状态用强调色） -->
+            <stroke
+                android:width="2dp"
+                android:color="#3F51B5" /> <!-- 建议在colors.xml中定义primary为主色调 -->
+            <!-- 背景色 -->
+            <solid android:color="@android:color/white" />
+            <!-- 内边距（避免文字紧贴边框） -->
+            <padding
+                android:top="2dp"
+                android:bottom="2dp" />
+            <!-- 阴影效果（API 21+支持） -->
+            <gradient
+                android:angle="90"
+                android:endColor="@android:color/transparent"
+                android:startColor="@android:color/transparent" />
+            <size
+                android:height="50dp" /> <!-- 与输入框高度保持一致 -->
+        </shape>
+    </item>
+
+
+    <!-- 输入框默认状态 -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp" />
+            <!-- 默认边框用浅灰色 -->
+            <stroke
+                android:width="1dp"
+                android:color="#E0E0E0" />
+            <solid android:color="@android:color/white" />
+            <padding
+                android:top="2dp"
+                android:bottom="2dp" />
+            <!-- 轻微阴影提升立体感 -->
+            <gradient
+                android:angle="90"
+                android:endColor="@android:color/transparent"
+                android:startColor="#00000005" />
+        </shape>
+    </item>
+</selector>

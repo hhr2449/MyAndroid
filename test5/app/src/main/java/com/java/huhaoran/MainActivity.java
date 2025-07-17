@@ -6,6 +6,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.google.android.material.navigation.NavigationView;
 
@@ -53,6 +54,28 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         titles = new ArrayList<>(Arrays.asList(categories));
 
+        //初始化用户管理的SharedPreferences
+        UserManager.init(this);
+        // 先初始化 navigationView
+        navigationView = findViewById(R.id.nav_view);
+        View headerView1 = navigationView.getHeaderView(0);
+        TextView usernameTextView = headerView1.findViewById(R.id.name);
+
+
+        // 用户管理逻辑
+        UserManager.init(this);
+        if (UserManager.isLoggedIn()) {
+            usernameTextView.setText(UserManager.getCurrentUserName());
+            usernameTextView.setOnClickListener(null);
+        } else {
+            usernameTextView.setText("点击登录");
+            usernameTextView.setOnClickListener(v -> {
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivity(intent);
+            });
+        }
+
+
         //初始化标列表
         TabPreference tabPreference = new TabPreference(this);
         titles = tabPreference.loadTitles();
@@ -76,10 +99,15 @@ public class MainActivity extends AppCompatActivity {
                     // 处理收藏夹逻辑
                     Intent intent2 = new Intent(MainActivity.this, FavoritesHistoryActivity.class);
                     startActivity(intent2);
-                } else if (id == R.id.nav_password) {
-                    // 处理密码管理逻辑
                 } else if (id == R.id.nav_logout) {
-                    // 处理登出逻辑
+                    UserManager.logout();
+                    usernameTextView.setText("点击登录");
+                    usernameTextView.setOnClickListener(v -> {
+                        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                        startActivity(intent);
+                    });
+                    recreate(); // 刷新主界面
+
                 } else if (id == R.id.nav_about) {
                     // 处理关于页面逻辑
                 }

@@ -34,6 +34,7 @@ public class BrowseHistoryActivity extends AppCompatActivity {
     boolean isLoading = false;
     boolean isEdit = false;
     private int currentPage = 1;
+    private String userName = UserManager.getCurrentUserName();
     //控件
     private TextView deleteButton;
     private TextView clearButton;
@@ -63,16 +64,19 @@ public class BrowseHistoryActivity extends AppCompatActivity {
         //设置返回框的点击事件
         backButton.setOnClickListener(v -> finish());
 
-        //创建适配器
-        browseHistoryAdapter = new HistoryItemAdapter(new ArrayList<>(), false, this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(browseHistoryAdapter);
-        recyclerView.addItemDecoration(new TabNewsFragment.SimpleDividerDecoration(this));
+        if(!UserManager.isLoggedIn()) {
+            Toast.makeText(this, "请先登录以查看历史记录", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            //创建适配器
+            browseHistoryAdapter = new HistoryItemAdapter(new ArrayList<>(), false, this);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            recyclerView.setAdapter(browseHistoryAdapter);
+            recyclerView.addItemDecoration(new TabNewsFragment.SimpleDividerDecoration(this));
 
-        //初始化界面
-        initView();
-
-
+            //初始化界面
+            initView();
+        }
 
 
 
@@ -94,7 +98,7 @@ public class BrowseHistoryActivity extends AppCompatActivity {
         // 从数据库请求下一页数据
         new Thread(() -> {
 
-            List<BrowseHistoryNote> browseHistoryNotes = AppDatabase.getInstance(this).browseHistoryDao().getBrowseHistoryPage(10, (currentPage - 1) * 10);
+            List<BrowseHistoryNote> browseHistoryNotes = AppDatabase.getInstance(this).browseHistoryDao().getBrowseHistoryPage(10, (currentPage - 1) * 10, userName);
             // 递增页码
             currentPage++;
 
@@ -148,7 +152,7 @@ public class BrowseHistoryActivity extends AppCompatActivity {
                                 new Thread(() -> {
                                     AppDatabase db = AppDatabase.getInstance(this);
                                     // 优化：批量删除
-                                    db.browseHistoryDao().deleteByTitles(new ArrayList<>(titlesToRemove));
+                                    db.browseHistoryDao().deleteByTitles(new ArrayList<>(titlesToRemove), userName);
 
                                     runOnUiThread(() -> {
                                         browseHistoryAdapter.removeItemsByTitle(titlesToRemove);
@@ -183,7 +187,7 @@ public class BrowseHistoryActivity extends AppCompatActivity {
                     .setPositiveButton("清空", (dialog, which) -> {
                         new Thread(() -> {
                             AppDatabase db = AppDatabase.getInstance(this);
-                            db.browseHistoryDao().deleteAll();
+                            db.browseHistoryDao().deleteAll(userName);
 
                             runOnUiThread(() -> {
                                 browseHistoryAdapter.updateData(new ArrayList<>());
