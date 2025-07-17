@@ -20,9 +20,12 @@ public interface SearchHistoryDao {
     void delete(SearchHistoryNote note);
 
     //按照时间戳进行排序，同时限制每次只获得limit条，offset表示跳过offset条数据
-    @Query("SELECT * FROM searchHistory ORDER BY time DESC LIMIT :limit OFFSET :offset")
-    List<SearchHistoryNote> getSearchHistoryPage(int limit, int offset);
+    @Query("SELECT * FROM searchHistory WHERE userName = :userName ORDER BY time DESC LIMIT :limit OFFSET :offset")
+    List<SearchHistoryNote> getSearchHistoryPage(int limit, int offset, String userName);
 
-    @Query("DELETE FROM searchHistory")
-    void clearAll();
+    @Query("DELETE FROM searchHistory WHERE userName = :userName")
+    void clearUserHistory(String userName);
+
+    @Query("DELETE FROM searchHistory WHERE id = :id AND userName = :userName")
+    void deleteById(int id, String userName);
 }

@@ -2,8 +2,10 @@ package com.java.huhaoran;
 
 import com.java.huhaoran.note.BrowseHistoryNote;
 import com.java.huhaoran.note.FavoritesHistoryNote;
+import com.java.huhaoran.note.SearchHistoryNote;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 
@@ -49,5 +51,26 @@ public class TransferHistoryToNewsItem {
             newsItems.add(newsItem);
         }
         return newsItems;
+    }
+
+    public static List<SearchData> transfer3(List<SearchHistoryNote> searchHistoryNotes) {
+        if(searchHistoryNotes == null) {
+            return null;
+        }
+        List<SearchData> searchDatas = new ArrayList<>();
+        for(SearchHistoryNote searchHistoryNote : searchHistoryNotes) {
+            SearchData searchData = new SearchData();
+            searchData.setKeyword(searchHistoryNote.keyword);
+            HashSet<String> categories = new HashSet<>();
+            String[] categoryArray = FetchNews.getLinks(searchHistoryNote.categories);
+            for(String category : categoryArray) {
+                categories.add(category);
+            }
+            searchData.setCategories(categories);
+            searchData.setStartDate(searchHistoryNote.startDate);
+            searchData.setEndDate(searchHistoryNote.endDate);
+            searchDatas.add(searchData);
+        }
+        return searchDatas;
     }
 }

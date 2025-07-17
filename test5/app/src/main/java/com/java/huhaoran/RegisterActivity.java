@@ -31,10 +31,16 @@ public class RegisterActivity extends AppCompatActivity {
             finish();
         });
 
+
         username = findViewById(R.id.register_username);
         password = findViewById(R.id.register_password);
         confirm = findViewById(R.id.register_password_again);
         registerButton = findViewById(R.id.btn_register);
+        toLoginButton = findViewById(R.id.btn_to_login);
+        toLoginButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+        });
 
         registerButton.setOnClickListener(v -> {
             String st_username = username.getText().toString().trim();

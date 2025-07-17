@@ -2,4 +2,4 @@
 <alpha xmlns:android="http://schemas.android.com/apk/res/android"
     android:fromAlpha="1.0"
     android:toAlpha="0.0"
-    android:duration="500" /> <!-- 动画持续时间，可按需调整，比如300、500毫秒等 -->
+    android:duration="500" />

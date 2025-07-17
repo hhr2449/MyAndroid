@@ -104,7 +104,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     // RecyclerView 相关更新
                     favoritesHistoryAdapter.appendData(newslist);
-                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout_favorites);
                     refreshLayout.finishLoadMore(); // 或 finishRefresh()
                     isLoading = false;
                 });
@@ -112,7 +112,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
                 //没有更多数据了
                 runOnUiThread(() -> {
                     Toast.makeText(FavoritesHistoryActivity.this, "没有更多记录了", Toast.LENGTH_SHORT).show();
-                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout_favorites);
                     refreshLayout.finishLoadMore(); // 或 finishRefresh()
                     isLoading = false;
                 });
@@ -124,7 +124,7 @@ public class FavoritesHistoryActivity extends AppCompatActivity {
     private void initView() {
         //加载数据
         loadMoreNewsData();
-        RefreshLayout refreshLayout = findViewById(R.id.refreshLayout);
+        RefreshLayout refreshLayout = findViewById(R.id.refreshLayout_favorites);
         // 上拉加载更多
         refreshLayout.setOnLoadMoreListener(refreshlayout -> {
             // 加载下一页

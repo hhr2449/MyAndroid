@@ -4563,7 +4563,100 @@ public void refreshSingleNews(String title) {
 
 
 
+### 开屏动画
 
+创建一个页面splashActivity用于展示开屏动画
+
+在manifest.xml中将其设置为默认启动页面
+
+```xml
+<activity
+    android:name=".SplashActivity"
+    android:exported="true"
+    android:theme="@style/Theme.Test5.NoActionBar">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+```
+
+这里的关键点在于：
+
+1. `android:exported="true"`允许被外部程序启动
+2. `<action android:name="android.intent.action.MAIN" />`表示这个是程序的入口
+3. `<category android:name="android.intent.category.LAUNCHER" />`表示该页面应该显示于系统的应用启动器中
+
+然后在这个页面中设置动画
+
+```java
+package com.java.huhaoran;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class SplashActivity extends AppCompatActivity {
+
+    private static final int SPLASH_DISPLAY_LENGTH = 3000; // 开屏动画持续时间，单位毫秒
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_splash);
+
+        // 加载动画资源
+        Animation fadeInAnimation = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+        Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+
+        // 获取布局中的视图
+        ImageView bookImageView = findViewById(R.id.book_image_view);
+        TextView appNameTextView = findViewById(R.id.app_name_text_view);
+
+        // 为视图设置动画
+        bookImageView.startAnimation(fadeInAnimation);
+        appNameTextView.startAnimation(slideUpAnimation);
+
+        // 延迟跳转到主 Activity
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Intent mainIntent = new Intent(SplashActivity.this, MainActivity.class);
+                SplashActivity.this.startActivity(mainIntent);
+                //设置页面动画
+                overridePendingTransition(0, R.anim.fade_out);
+                SplashActivity.this.finish();
+            }
+        }, SPLASH_DISPLAY_LENGTH);
+    }
+}
+```
+
+因为需要时间展示动画，所以需要设置延时`Handler().postDelayed(Runnable, time)`，然后为视图绑定上设置好的动画效果即可
+
+注意最后要跳转到主界面
+
+
+
+### 登录/注册系统
+
+这里的账号仅作本地储存，不涉及服务器，也无法跨设备访问
+
+在room中增加表userNote用于保存所有的账号和密码，对于历史记录，收藏记录，点赞记录等均与账号进行绑定，所有获取和插入都只是针对userName为当前账号的表项进行的
+
+使用SharedPreference来进行当前登录状态的储存
+
+保存当前登录的账号名，如果要退出登录就将账号名清除
+
+设置UserManager工具类，里面封装了初始化储存登录状态的SharedPrefrence的对象的方法，还有判断是否登录，设置登录账号名，退出登录的方法
+
+每次加载和保存于账号有关的信息（历史，点赞，收藏）时都需要进行是否登录的判断，并且只有登陆了才可以进行
 
 
 

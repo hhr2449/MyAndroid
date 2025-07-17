@@ -18,12 +18,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.java.huhaoran.R;
+import com.java.huhaoran.note.FavoritesHistoryNote;
+import com.java.huhaoran.note.SearchHistoryNote;
+import com.scwang.smart.refresh.layout.api.RefreshLayout;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class SearchActivity extends AppCompatActivity {
@@ -41,6 +49,10 @@ public class SearchActivity extends AppCompatActivity {
     //是否从搜索结果界面跳转
     private boolean fromResult = false;
 
+    private boolean isLoading = false;
+    private int currentPage = 1;
+
+
     //用于选择搜索日期
     //思路是设置两个日期框，点击就会弹出calendar，选择日期
     TextView textStartDate, textEndDate;
@@ -48,6 +60,14 @@ public class SearchActivity extends AppCompatActivity {
 
     //清除日期
     ImageView clear_date;
+
+
+
+    private boolean isLogin = UserManager.isLoggedIn();
+    private String userName = UserManager.getCurrentUserName();
+
+    private RecyclerView recyclerView;
+    private SearchHistoryAdapter searchHistoryAdapter;
 
     private void getViews() {
         search_edittext = findViewById(R.id.search_edittext);
@@ -157,8 +177,57 @@ public class SearchActivity extends AppCompatActivity {
             //时间已经添加
             Intent intent = new Intent(SearchActivity.this, SearchResultActivity.class);
             intent.putExtra("searchData", searchData);
+            //如果登录了，要记录搜索
+            // 如果登录了，要记录搜索（数据库操作放子线程）
+            // 如果登录了，记录搜索（处理可能的 null 参数）
+            if (isLogin) {
+                new Thread(() -> {
+                    String keyword = searchData.getKeyword();
+                    if(searchData.getKeyword() == null) {
+                        keyword = "";
+                    }
+                    // 处理分类（为空时存空字符串）
+                    String categories = TextUtils.join(",", searchData.getCategories());
+                    if (categories == null) {
+                        categories = "";
+                    }
+
+                    // 处理日期（为 null 时存空字符串）
+                    String startDate = searchData.getStartDate() == null ? "" : searchData.getStartDate();
+                    String endDate = searchData.getEndDate() == null ? "" : searchData.getEndDate();
+
+                    // 创建 SearchHistoryNote 时传入非 null 参数
+                    SearchHistoryNote note = new SearchHistoryNote(
+                            userName,
+                            keyword,
+                            categories,
+                            startDate,
+                            endDate,
+                            System.currentTimeMillis()
+                    );
+
+                    AppDatabase.getInstance(SearchActivity.this).searchHistoryDao().insert(note);
+                }).start();
+            }
             startActivity(intent);
         });
+
+
+        //设置搜索历史
+        if(isLogin) {
+            recyclerView = findViewById(R.id.search_history_list);
+            searchHistoryAdapter = new SearchHistoryAdapter(new ArrayList<>(), this);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            recyclerView.setAdapter(searchHistoryAdapter);
+            loadMoreNewsData();
+            RefreshLayout refreshLayout = findViewById(R.id.refreshLayout_search);
+            if (refreshLayout != null) {
+                refreshLayout.setOnLoadMoreListener(v -> {
+                    loadMoreNewsData();
+                });
+            }
+        }
+
 
 
     }
@@ -189,7 +258,7 @@ public class SearchActivity extends AppCompatActivity {
                 searchData.setStartDate(date);
             } else {
                 if(searchData.getStartDate() != null) {
-                    //如果开始日期不为空，则判断是否小于开始日期
+                    //如果结束日期不为空，则判断是否小于开始日期
                     if(dateCompare(date, searchData.getStartDate()) < 0) {
                         //如果更小，则弹出提示
                         Toast.makeText(SearchActivity.this, "结束日期不能小于开始日期", Toast.LENGTH_SHORT).show();
@@ -208,8 +277,6 @@ public class SearchActivity extends AppCompatActivity {
         //展示日历
         datePickerDialog.show();
     }
-
-
     //日期比较
     //约定：格式一定是年-月-日
     //约定：date1 > date2，则返回1, date1 < date2，则返回-1, date1 = date2，则返回0
@@ -222,6 +289,34 @@ public class SearchActivity extends AppCompatActivity {
         } catch (ParseException e) {
             return -2; // 格式错误
         }
+    }
+
+    private void loadMoreNewsData() {
+        // 防止重复加载
+        if (isLoading) return;
+        isLoading = true;
+
+
+        // 从数据库请求下一页数据
+        new Thread(() -> {
+
+            List<SearchHistoryNote> searchHistoryNotes = AppDatabase.getInstance(this).searchHistoryDao().getSearchHistoryPage(10, (currentPage - 1) * 10, userName);
+            // 递增页码
+            currentPage++;
+
+            if (searchHistoryNotes != null && searchHistoryNotes.size() > 0) {
+                List<SearchData> lists = TransferHistoryToNewsItem.transfer3(searchHistoryNotes);
+
+                //更新ui界面（因为当前在一个新线程，不在主线程中是无法直接更新界面的，需要使用runOnUiThread）
+                runOnUiThread(() -> {
+                    // RecyclerView 相关更新
+                    searchHistoryAdapter.appendData(lists);
+                    RefreshLayout refreshLayout = findViewById(R.id.refreshLayout_search);
+                    refreshLayout.finishLoadMore(); // 或 finishRefresh()
+                    isLoading = false;
+                });
+            }
+        }).start();
     }
 
 }

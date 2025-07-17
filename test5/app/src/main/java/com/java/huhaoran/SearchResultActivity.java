@@ -87,7 +87,7 @@ public class SearchResultActivity extends AppCompatActivity {
         }
 
         //类别
-        if(searchData.getCategories() != null) {
+        if(searchData.getCategories() != null && !searchData.getCategories().isEmpty()) {
             categories = searchData.getCategories().toArray(new String[0]);
             if(categories.length == 1 && categories[0].equals("全部")) {
                 categories = null;

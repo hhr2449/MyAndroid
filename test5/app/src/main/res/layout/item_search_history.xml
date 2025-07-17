@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/item_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp"
+    android:layout_marginBottom="5dp"
+    android:background="@drawable/click_effect5">
+
+    <!-- 搜索关键词（主信息） -->
+    <TextView
+        android:id="@+id/keywords_history"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="智慧之光如何闪耀海洋"
+        android:textColor="#222222"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:maxLines="3"
+        android:ellipsize="end" />
+
+    <!-- 分类 + 时间（副信息） -->
+    <LinearLayout
+        android:id="@+id/info_layout"
+        android:layout_below="@id/keywords_history"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_category"
+            app:tint="#928D8D"
+            android:layout_marginRight="4dp" />
+
+        <TextView
+            android:id="@+id/category_history"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全部"
+            android:textColor="#928D8D"
+            android:textSize="13sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxWidth="100dp" />
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_time"
+            app:tint="#928D8D"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="4dp" />
+
+        <TextView
+            android:id="@+id/time_history"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2020-07-02 ~ 2024-01-01"
+            android:textColor="#928D8D"
+            android:textSize="13sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+</RelativeLayout>
