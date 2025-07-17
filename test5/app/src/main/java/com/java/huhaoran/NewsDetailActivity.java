@@ -96,7 +96,7 @@ public class NewsDetailActivity extends AppCompatActivity {
                 ImageView imageView = new ImageView(this);
                 //LayoutParams是用于设定子视图布局的类，这里设置了imageView的宽高
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                        300, // 宽度，可根据需要改为 ViewGroup.LayoutParams.WRAP_CONTENT
+                        520, // 宽度，可根据需要改为 ViewGroup.LayoutParams.WRAP_CONTENT
                         ViewGroup.LayoutParams.MATCH_PARENT);
                 params.setMargins(8, 0, 8, 0);
                 imageView.setLayoutParams(params);
