@@ -127,5 +127,10 @@ public class SearchHistoryAdapter extends RecyclerView.Adapter<SearchHistoryAdap
         notifyDataSetChanged();           // 通知 RecyclerView 所有项需要刷新
     }
 
+    public void appendDataInHead(List<SearchData> moreData) {
+        this.list.addAll(0, moreData);
+        notifyItemRangeInserted(0, moreData.size());
+    }
+
 
 }

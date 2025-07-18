@@ -207,6 +207,10 @@ public class SearchActivity extends AppCompatActivity {
                     );
 
                     AppDatabase.getInstance(SearchActivity.this).searchHistoryDao().insert(note);
+                    ArrayList<SearchHistoryNote> notes = new ArrayList<>();
+                    notes.add(note);
+                    List<SearchData> searchData = TransferHistoryToNewsItem.transfer3(notes);
+                    runOnUiThread(() -> searchHistoryAdapter.appendDataInHead(searchData));
                 }).start();
             }
             startActivity(intent);
@@ -224,6 +228,7 @@ public class SearchActivity extends AppCompatActivity {
             if (refreshLayout != null) {
                 refreshLayout.setOnLoadMoreListener(v -> {
                     loadMoreNewsData();
+                    refreshLayout.finishLoadMore();
                 });
             }
         }
